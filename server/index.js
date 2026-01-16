@@ -4,6 +4,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import 'dotenv/config';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,6 +28,7 @@ app.get(/(.*)/, (req, res) => {
 });
 
 const PORT = process.env.PORT || 4000;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 // State
 let gameState = {
@@ -40,6 +42,14 @@ io.on('connection', (socket) => {
 
     // Send initial state
     socket.emit('UPDATE_STATE', gameState);
+
+    socket.on('ADMIN_LOGIN', (password) => {
+        if (password === ADMIN_PASSWORD) {
+            socket.emit('ADMIN_LOGIN_SUCCESS');
+        } else {
+            socket.emit('ADMIN_LOGIN_FAIL');
+        }
+    });
 
     socket.on('JOIN', (user) => {
         // Avoid duplicates

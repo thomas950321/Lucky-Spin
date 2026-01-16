@@ -10,6 +10,9 @@ export const useGameSocket = () => {
         winner: null,
     });
 
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [loginError, setLoginError] = useState(false);
+
     const [socket, setSocket] = useState<Socket | null>(null);
 
     useEffect(() => {
@@ -24,6 +27,15 @@ export const useGameSocket = () => {
 
         newSocket.on('UPDATE_STATE', (newState: GameState) => {
             setGameState(newState);
+        });
+
+        newSocket.on('ADMIN_LOGIN_SUCCESS', () => {
+            setIsAdmin(true);
+            setLoginError(false);
+        });
+
+        newSocket.on('ADMIN_LOGIN_FAIL', () => {
+            setLoginError(true);
         });
 
         setSocket(newSocket);
@@ -51,10 +63,22 @@ export const useGameSocket = () => {
         socket?.emit('START_DRAW');
     };
 
+    const emitLogin = (password: string) => {
+        console.log('Emitting login:', password, !!socket);
+        if (!socket) {
+            console.error('Socket not connected');
+            return;
+        }
+        socket.emit('ADMIN_LOGIN', password);
+    };
+
     return {
         gameState,
         emitJoin,
         emitReset,
         emitStart,
+        isAdmin,
+        loginError,
+        emitLogin,
     };
 };

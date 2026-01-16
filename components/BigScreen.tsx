@@ -51,7 +51,7 @@ export const BigScreen: React.FC<BigScreenProps> = ({ gameState }) => {
           </h1>
         </div>
         <div className="flex items-center gap-4 bg-slate-800 px-6 py-3 rounded-full border border-slate-700 shadow-lg hidden sm:flex">
-          <span className="text-slate-400 text-lg">Join at:</span>
+          <span className="text-slate-400 text-lg">加入網址：</span>
           <span className="text-xl font-mono text-pink-400 font-bold tracking-wider">
             {window.location.origin}/#/join
           </span>
@@ -67,7 +67,7 @@ export const BigScreen: React.FC<BigScreenProps> = ({ gameState }) => {
         {gameState.users.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-slate-600 gap-4 animate-pulse">
             <Users size={64} className="opacity-20" />
-            <p className="text-2xl font-light">Waiting for participants...</p>
+            <p className="text-2xl font-light">等待參與者加入...</p>
             <p className="text-sm font-light opacity-50 bg-slate-800 px-4 py-2 rounded-full">
               {window.location.origin}/#/join
             </p>

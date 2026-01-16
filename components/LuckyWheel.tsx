@@ -131,7 +131,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
                 {/* Center Decoration */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-900 rounded-full border-4 border-slate-700 shadow-xl flex items-center justify-center z-10">
-                        <span className="text-white font-bold text-lg sm:text-xl">GO</span>
+                        <span className="text-white font-bold text-lg sm:text-xl">抽</span>
                     </div>
                 </div>
 

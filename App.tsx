@@ -4,6 +4,7 @@ import { BigScreen } from './components/BigScreen';
 import { MobileJoin } from './components/MobileJoin';
 import { AdminPanel } from './components/AdminPanel';
 
+import { AdminLogin } from './components/AdminLogin';
 import { useGameSocket } from './services/socket';
 import { Monitor, Smartphone, Settings } from 'lucide-react';
 
@@ -34,7 +35,7 @@ const LandingOrBigScreenWrapper: React.FC<{ children: React.ReactNode }> = ({ ch
 }
 
 const App: React.FC = () => {
-  const { gameState, emitJoin, emitReset, emitStart } = useGameSocket();
+  const { gameState, emitJoin, emitReset, emitStart, isAdmin, loginError, emitLogin } = useGameSocket();
 
   return (
     <HashRouter>
@@ -42,15 +43,19 @@ const App: React.FC = () => {
         <Nav />
         <Routes>
           <Route path="/" element={<BigScreen gameState={gameState} />} />
-          <Route path="/join" element={<MobileJoin onJoin={emitJoin} />} />
+          <Route path="/join" element={<MobileJoin onJoin={emitJoin} gameState={gameState} />} />
           <Route
             path="/admin"
             element={
-              <AdminPanel
-                gameState={gameState}
-                onStart={emitStart}
-                onReset={emitReset}
-              />
+              isAdmin ? (
+                <AdminPanel
+                  gameState={gameState}
+                  onStart={emitStart}
+                  onReset={emitReset}
+                />
+              ) : (
+                <AdminLogin onLogin={emitLogin} error={loginError} />
+              )
             }
           />
         </Routes>
