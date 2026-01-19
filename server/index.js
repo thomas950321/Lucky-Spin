@@ -232,20 +232,21 @@ io.on('connection', (socket) => {
         // Allow anyone to start draw (BigScreen or Admin)
         // if (socket.id !== adminSocketId) return; 
         if (gameState.users.length > 0) {
-            gameState.status = 'ROLLING';
-            gameState.winner = null;
+            // Pick winner immediately so wheel knows where to land
+            const winnerIndex = Math.floor(Math.random() * gameState.users.length);
+            gameState.winner = gameState.users[winnerIndex];
+            gameState.status = 'ROLLING'; // Start Animation
             io.emit('UPDATE_STATE', gameState);
 
+            // Wait for Fixed Frontend Animation Time (8s) + Buffer
             setTimeout(() => {
-                const winnerIndex = Math.floor(Math.random() * gameState.users.length);
-                gameState.winner = gameState.users[winnerIndex];
-                // Add to history
+                // Add to history ONLY after spin completes
                 if (!gameState.winnersHistory) gameState.winnersHistory = [];
                 gameState.winnersHistory.push(gameState.winner);
 
-                gameState.status = 'WINNER';
+                gameState.status = 'WINNER'; // Show Result
                 io.emit('UPDATE_STATE', gameState);
-            }, 500);
+            }, 8500);
         }
     });
 

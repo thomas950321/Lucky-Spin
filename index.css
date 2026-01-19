@@ -158,3 +158,16 @@ body {
         inset 0 0 2px rgba(255, 255, 255, 0.8),
         0 0 4px rgba(255, 255, 255, 0.5);
 }
+
+/* Custom Scrollbar - Hidden but functional */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
+
+.custom-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}

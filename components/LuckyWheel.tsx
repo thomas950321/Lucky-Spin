@@ -36,7 +36,9 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
     ];
 
     useEffect(() => {
-        if (gameState.status === 'WINNER' && gameState.winner && !isSpinning) {
+        // Trigger spin ONLY when status is ROLLING (Start of draw)
+        // We do NOT spin on WINNER status to prevent double-spinning or auto-spin on refresh
+        if (gameState.status === 'ROLLING' && gameState.winner && !isSpinning) {
             const winnerIndex = users.findIndex(u => u.id === gameState.winner?.id);
             if (winnerIndex !== -1) {
                 spinToWinner(winnerIndex);
@@ -55,7 +57,9 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
         const randomOffset = (Math.random() - 0.5) * (segmentAngle * 0.6); // Tighter landing
         const winnerCenterAngle = (winnerIndex + 0.5) * segmentAngle;
 
-        let targetRotation = 270 - winnerCenterAngle + randomOffset;
+        // Base alignment: To land at 0deg (Top), we rotate by -winnerAngle
+        // Using 360 as base to keep numbers positive before loop
+        let targetRotation = 360 - winnerCenterAngle + randomOffset;
         const current = rotation;
         while (targetRotation < current + extraSpins) {
             targetRotation += 360;

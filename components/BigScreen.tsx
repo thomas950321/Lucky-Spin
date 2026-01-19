@@ -87,7 +87,13 @@ export const BigScreen: React.FC<BigScreenProps> = ({ gameState, onStart }) => {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {gameState.users.map((user) => (
                 <div key={user.id} className="bg-white/5 border border-white/5 p-4 rounded-xl flex items-center gap-3 hover:bg-white/10 transition-colors group">
-                  <div className="text-2xl filter drop-shadow-lg group-hover:scale-110 transition-transform">{user.avatar}</div>
+                  <div className="text-2xl filter drop-shadow-lg group-hover:scale-110 transition-transform flex items-center justify-center">
+                    {user.avatar.startsWith('http') ? (
+                      <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover border-2 border-white/20" />
+                    ) : (
+                      user.avatar
+                    )}
+                  </div>
                   <div className="font-medium text-slate-200 truncate">{user.name}</div>
                 </div>
               ))}
