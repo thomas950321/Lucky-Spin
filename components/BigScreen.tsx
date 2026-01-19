@@ -10,57 +10,66 @@ interface BigScreenProps {
 
 export const BigScreen: React.FC<BigScreenProps> = ({ gameState }) => {
 
+  const [showParticipants, setShowParticipants] = React.useState(false);
+
   const handleSpinComplete = () => {
-    // Fire confetti when spin stops
-    const duration = 3000;
-    const end = Date.now() + duration;
-
-    const frame = () => {
-      confetti({
-        particleCount: 2,
-        angle: 60,
-        spread: 55,
-        origin: { x: 0 },
-        colors: ['#a855f7', '#ec4899']
-      });
-      confetti({
-        particleCount: 2,
-        angle: 120,
-        spread: 55,
-        origin: { x: 1 },
-        colors: ['#a855f7', '#ec4899']
-      });
-
-      if (Date.now() < end) {
-        requestAnimationFrame(frame);
-      }
-    };
-    frame();
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col overflow-hidden">
-      {/* Header */}
-      <header className="bg-slate-800/50 backdrop-blur-md border-b border-slate-700 p-6 flex justify-between items-center sticky top-0 z-30">
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-pink-500 to-violet-600 p-2 rounded-lg">
-            <Trophy className="text-white" size={28} />
+    <div className="min-h-screen flex flex-col overflow-hidden relative">
+      {/* Header Removed for Immersive Experience */}
+
+      {/* Floating Participant Badge */}
+      <button
+        onClick={() => setShowParticipants(true)}
+        className="absolute top-6 right-6 z-40 group"
+      >
+        <div className="bg-slate-900/80 backdrop-blur-md border border-yellow-500/30 px-6 py-2 rounded-full shadow-[0_0_15px_rgba(234,179,8,0.2)] group-hover:shadow-[0_0_25px_rgba(234,179,8,0.4)] transition-all flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
+            <Users size={18} className="text-yellow-500" />
           </div>
-          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-violet-400">
-            RaffleRoyale
-          </h1>
+          <span className="font-mono text-xl font-bold text-white tracking-widest">{gameState.users.length}</span>
         </div>
-        <div className="flex items-center gap-4 bg-slate-800 px-6 py-3 rounded-full border border-slate-700 shadow-lg hidden sm:flex">
-          <span className="text-slate-400 text-lg">加入網址：</span>
-          <span className="text-xl font-mono text-pink-400 font-bold tracking-wider">
-            {window.location.origin}/#/join
-          </span>
+      </button>
+
+      {/* Participants Modal */}
+      {showParticipants && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowParticipants(false)}>
+          <div className="bg-slate-900/95 border border-yellow-500/20 rounded-3xl p-8 max-w-4xl w-full max-h-[80vh] overflow-y-auto shadow-2xl relative" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-8 sticky top-0 bg-slate-900/95 z-10 py-2 border-b border-white/5">
+              <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-200 to-amber-500 flex items-center gap-3">
+                <Users className="text-yellow-500" />
+                Participants ({gameState.users.length})
+              </h2>
+              <button
+                onClick={() => setShowParticipants(false)}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {gameState.users.map((user) => (
+                <div key={user.id} className="bg-white/5 border border-white/5 p-4 rounded-xl flex items-center gap-3 hover:bg-white/10 transition-colors group">
+                  <div className="text-2xl filter drop-shadow-lg group-hover:scale-110 transition-transform">{user.avatar}</div>
+                  <div className="font-medium text-slate-200 truncate">{user.name}</div>
+                </div>
+              ))}
+              {gameState.users.length === 0 && (
+                <div className="col-span-full text-center py-10 text-slate-500 italic">
+                  No participants yet...
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-slate-400">
-          <Users size={20} />
-          <span className="font-mono text-xl">{gameState.users.length}</span>
-        </div>
-      </header>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center relative">
@@ -69,7 +78,7 @@ export const BigScreen: React.FC<BigScreenProps> = ({ gameState }) => {
             <Users size={64} className="opacity-20" />
             <p className="text-2xl font-light">等待參與者加入...</p>
             <p className="text-sm font-light opacity-50 bg-slate-800 px-4 py-2 rounded-full">
-              {window.location.origin}/#/join
+              {window.location.host}/#/join
             </p>
           </div>
         ) : (

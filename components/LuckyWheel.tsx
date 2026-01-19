@@ -24,7 +24,16 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
     const [isSpinning, setIsSpinning] = useState(false);
     const users = gameState.users;
 
-    // When status becomes WINNER, we need to spin to the winner
+    // Casino High-End Colors
+    const SEGMENT_COLORS = [
+        '#9b1c31', // Ruby Red
+        '#0f52ba', // Sapphire Blue
+        '#004d25', // Emerald Green 
+        '#4a0404', // Deep Garnet
+        '#1a1a7a', // Deep Indigo
+        '#004d25', // Forest Green
+    ];
+
     useEffect(() => {
         if (gameState.status === 'WINNER' && gameState.winner && !isSpinning) {
             const winnerIndex = users.findIndex(u => u.id === gameState.winner?.id);
@@ -32,7 +41,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
                 spinToWinner(winnerIndex);
             }
         } else if (gameState.status === 'WAITING') {
-            // Reset rotation when game resets
             setRotation(0);
             setIsSpinning(false);
         }
@@ -41,26 +49,12 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
     const spinToWinner = (winnerIndex: number) => {
         setIsSpinning(true);
         const segmentAngle = 360 / users.length;
-
-        // We want the winner segment to align with the pointer at 0 degrees (right side normally, adjusted visuals)
-        // The visual pointer is at Top (270deg).
-        // Segment i occupies [i*seg, (i+1)*seg]. Center is (i+0.5)*seg.
-
-        // We want target center to land at 270deg (-90deg).
-        // rotation + center = 270
-        // rotation = 270 - center
-
-        const spinCount = 5; // number of full spins
+        const spinCount = 8; // More spins for dramatic effect
         const extraSpins = 360 * spinCount;
-
-        // Randomize slightly within the segment to avoid landing on lines
-        const randomOffset = (Math.random() - 0.5) * (segmentAngle * 0.8);
-
+        const randomOffset = (Math.random() - 0.5) * (segmentAngle * 0.6); // Tighter landing
         const winnerCenterAngle = (winnerIndex + 0.5) * segmentAngle;
 
         let targetRotation = 270 - winnerCenterAngle + randomOffset;
-
-        // Make target always greater than current
         const current = rotation;
         while (targetRotation < current + extraSpins) {
             targetRotation += 360;
@@ -68,11 +62,10 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
 
         setRotation(targetRotation);
 
-        // Wait for transition to end
         setTimeout(() => {
             setIsSpinning(false);
             onSpinComplete();
-        }, 5000); // 5s matches the CSS transition time
+        }, 8000); // 8s spin for suspense
     };
 
     if (users.length === 0) return null;
@@ -80,71 +73,142 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
     const segmentAngle = 360 / users.length;
 
     return (
-        <div className="relative flex flex-col items-center justify-center py-10 w-full h-full min-h-[600px]">
+        <div className="relative flex flex-col items-center justify-center w-full h-full min-h-[700px]">
 
-            {/* Pointer */}
-            <div className="absolute top-[calc(50%-300px-20px)] sm:top-[calc(50%-250px-20px)] md:top-10 z-20">
-                <div className="w-0 h-0 border-l-[20px] border-l-transparent border-t-[40px] border-t-yellow-400 border-r-[20px] border-r-transparent drop-shadow-md pb-[-10px]"></div>
+            {/* Ambient Casino Lighting */}
+            <div className="absolute inset-0 bg-yellow-500/5 blur-[100px] rounded-full pointer-events-none animate-pulse-slow"></div>
+
+            {/* Pointer - Diamond Arrow */}
+            <div className="absolute top-[calc(50%-330px)] sm:top-[calc(50%-280px)] z-30 drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">
+                <div className="w-16 h-20 bg-gradient-to-b from-slate-200 to-slate-400 rotate-180 [clip-path:polygon(50%_0%,_0%_100%,_100%_100%)] flex items-center justify-center shadow-inner relative">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/50 to-transparent opacity-50"></div>
+                    <div className="w-6 h-6 bg-cyan-400 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.8)] border-2 border-white animate-pulse"></div>
+                </div>
             </div>
 
-            {/* Wheel Container */}
-            <div
-                className="w-[90vw] h-[90vw] max-w-[600px] max-h-[600px] rounded-full border-8 border-slate-800 shadow-[0_0_50px_rgba(139,92,246,0.5)] relative overflow-hidden transition-transform duration-[5000ms] cubic-bezier(0.15, 0, 0.15, 1)"
-                style={{ transform: `rotate(${rotation}deg)` }}
-            >
-                {/* Background Gradients using Conic Gradient */}
-                <div
-                    className="absolute inset-0 -z-10 w-full h-full"
-                    style={{
-                        background: `conic-gradient(from 0deg, ${users.map((_, i) => `${COLORS[i % COLORS.length]} ${i * segmentAngle}deg ${(i + 1) * segmentAngle}deg`).join(', ')})`
-                    }}
-                />
+            {/* Main Wheel Structure */}
+            <div className="relative p-4 rounded-full bg-gradient-to-br from-[#4a3b18] via-[#856b28] to-[#4a3b18] shadow-[0_0_60px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.8)]">
 
-                {/* Segments Text */}
-                {users.map((user, idx) => {
-                    const angle = idx * segmentAngle;
-                    const centerAngle = angle + segmentAngle / 2;
-                    return (
+                {/* Chasing Lights Ring */}
+                <div className="absolute inset-3 border-4 border-dotted border-yellow-200/50 rounded-full animate-[spin_20s_linear_infinite] opacity-50"></div>
+
+                {/* Diamond Studs Ring */}
+                {Array.from({ length: 24 }).map((_, i) => (
+                    <div
+                        key={i}
+                        className="absolute w-4 h-4 bg-white rounded-full diamond-stud z-20"
+                        style={{
+                            top: '50%',
+                            left: '50%',
+                            transform: `rotate(${i * (360 / 24)}deg) translate(0, -320px)`, // Radius adjustment
+                            animation: `sparkle 2s infinite ${i * 0.1}s`
+                        }}
+                    ></div>
+                ))}
+
+                {/* The Rotating Wheel */}
+                <div
+                    className="w-[85vw] h-[85vw] max-w-[600px] max-h-[600px] rounded-full border-[12px] border-[#bf953f] shadow-[inset_0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden transition-transform duration-[8000ms] cubic-bezier(0.12, 0, 0.05, 1)"
+                    style={{ transform: `rotate(${rotation}deg)` }}
+                >
+                    {/* Metallic Segments */}
+                    <div
+                        className="absolute inset-0 -z-10 w-full h-full"
+                        style={{
+                            background: `conic-gradient(from 0deg, ${users.map((_, i) => {
+                                const color = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
+                                return `${color} ${i * segmentAngle}deg ${(i + 1) * segmentAngle}deg`;
+                            }).join(', ')})`
+                        }}
+                    >
+                        {/* Overlay Gradient for metallic sheen */}
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(0,0,0,0.4)_100%)]"></div>
+                    </div>
+
+                    {/* Gold Dividers */}
+                    {users.map((_, i) => (
                         <div
-                            key={user.id}
-                            className="absolute w-full h-full top-0 left-0 flex items-center justify-center origin-center pointer-events-none"
-                            style={{
-                                transform: `rotate(${centerAngle}deg)`,
-                            }}
-                        >
-                            {/* Text Content - pushed to the edge */}
+                            key={`div-${i}`}
+                            className="absolute top-0 left-1/2 w-1 h-1/2 bg-gradient-to-b from-[#fcf6ba] via-[#bf953f] to-transparent origin-bottom -ml-0.5"
+                            style={{ transform: `rotate(${i * segmentAngle}deg)` }}
+                        />
+                    ))}
+
+                    {/* Content (Avatars & Names) */}
+                    {users.map((user, idx) => {
+                        const angle = idx * segmentAngle;
+                        const centerAngle = angle + segmentAngle / 2;
+                        return (
                             <div
-                                className="absolute right-0 flex items-center justify-end pr-8 sm:pr-12 md:pr-16"
-                                style={{ width: '50%', transformOrigin: 'left center' }}
+                                key={user.id}
+                                className="absolute w-full h-full top-0 left-0 flex items-center justify-center origin-center pointer-events-none"
+                                style={{ transform: `rotate(${centerAngle}deg)` }}
                             >
-                                <div className="flex flex-col items-center gap-1 text-white font-bold" style={{ transform: `rotate(90deg)` }}>
-                                    <span className="text-2xl sm:text-4xl filter drop-shadow-md">{user.avatar}</span>
-                                    {users.length < 16 && (
-                                        <span className="text-xs sm:text-sm md:text-lg whitespace-nowrap filter drop-shadow-md max-w-[80px] sm:max-w-[120px] truncate">{user.name}</span>
-                                    )}
+                                <div
+                                    className="absolute right-0 flex items-center justify-end pr-10 sm:pr-14 md:pr-20"
+                                    style={{ width: '50%', transformOrigin: 'left center' }}
+                                >
+                                    <div className="flex flex-col items-center gap-2" style={{ transform: `rotate(90deg)` }}>
+                                        {/* Gold Framed Avatar */}
+                                        <div className="relative p-1 rounded-full bg-gradient-to-tr from-[#bf953f] to-[#fcf6ba] shadow-lg">
+                                            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black/20 flex items-center justify-center text-3xl sm:text-4xl backdrop-blur-sm overflow-hidden">
+                                                {user.avatar.startsWith('http') ? (
+                                                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    user.avatar
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {users.length < 16 && (
+                                            <span className="font-serif text-gold font-bold text-sm sm:text-lg tracking-wider bg-black/40 px-3 py-1 rounded-full border border-[#bf953f]/30 max-w-[100px] truncate shadow-sm">
+                                                {user.name}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    );
-                })}
-
-                {/* Center Decoration */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-900 rounded-full border-4 border-slate-700 shadow-xl flex items-center justify-center z-10">
-                        <span className="text-white font-bold text-lg sm:text-xl">抽</span>
-                    </div>
+                        );
+                    })}
                 </div>
 
+                {/* Central Jeweled Button */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="relative group">
+                        {/* Outer gold ring */}
+                        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-[#bf953f] to-[#aa771c] shadow-[0_10px_20px_rgba(0,0,0,0.5)] flex items-center justify-center">
+                            {/* Inner Ruby Gem */}
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-[#ff0044] via-[#990033] to-[#550011] shadow-[inset_0_5px_10px_rgba(255,255,255,0.4),inset_0_-5px_10px_rgba(0,0,0,0.6)] flex items-center justify-center relative overflow-hidden">
+                                {/* Gem Shine reflection */}
+                                <div className="absolute top-2 right-4 w-6 h-4 bg-white/40 blur-sm rounded-full rotate-45"></div>
+
+                                <span className="text-[#fcf6ba] font-serif font-black text-xl sm:text-2xl tracking-widest drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] z-10 animate-pulse">
+                                    SPIN
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* Winner Display below */}
+            {/* Winner Badge - Casino Chip Style */}
             {gameState.status === 'WINNER' && !isSpinning && gameState.winner && (
-                <div className="absolute bottom-10 z-50 animate-in fade-in slide-in-from-bottom-4 duration-700 pointer-events-none">
-                    <div className="flex flex-col items-center gap-4 bg-slate-900/80 backdrop-blur-md p-8 rounded-3xl border border-white/10 shadow-2xl">
-                        <div className="text-8xl animate-bounce">{gameState.winner.avatar}</div>
-                        <h2 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-400 filter drop-shadow-lg">
-                            {gameState.winner.name}
-                        </h2>
+                <div className="absolute bottom-4 sm:bottom-10 z-50 animate-in zoom-in slide-in-from-bottom duration-700 pointer-events-none">
+                    <div className="relative">
+                        {/* Spinning rays background */}
+                        <div className="absolute inset-0 bg-yellow-500/30 blur-2xl animate-[spin_4s_linear_infinite]"></div>
+
+                        <div className="relative bg-gradient-to-b from-[#1a1a1a] to-black p-1 rounded-full border-4 border-[#bf953f] shadow-[0_0_50px_rgba(255,215,0,0.5)]">
+                            <div className="bg-[radial-gradient(circle,transparent_20%,#000_120%)] p-8 sm:p-12 rounded-full flex flex-col items-center gap-2 border border-[#fcf6ba]/20">
+                                <span className="text-[#bf953f] uppercase tracking-[0.3em] text-xs font-bold">Jackpot Winner</span>
+                                <div className="text-8xl animate-[bounce_1s_infinite] filter drop-shadow-[0_0_15px_rgba(255,215,0,0.5)]">
+                                    {gameState.winner.avatar}
+                                </div>
+                                <h2 className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#fcf6ba] to-[#bf953f] filter drop-shadow-lg font-serif mt-2">
+                                    {gameState.winner.name}
+                                </h2>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

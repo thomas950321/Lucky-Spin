@@ -80,5 +80,6 @@ export const useGameSocket = () => {
         isAdmin,
         loginError,
         emitLogin,
+        socket
     };
 };

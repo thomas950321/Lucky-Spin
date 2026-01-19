@@ -1,0 +1,160 @@
+/* Global Styles for UI/UX Pro Max */
+
+body {
+    background-color: #0f172a;
+    /* slate-900 */
+    background-image:
+        linear-gradient(rgba(15, 23, 42, 0.2), rgba(15, 23, 42, 0.1)),
+        url('/casino-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+}
+
+/* Glassmorphism Utilities */
+.glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.glass-panel {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Animations */
+@keyframes nice-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 25px rgba(168, 85, 247, 0.5);
+    }
+}
+
+.animate-float {
+    animation: float 6s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+    animation: nice-spin 20s linear infinite;
+}
+
+.glow-text {
+    text-shadow: 0 0 10px rgba(167, 139, 250, 0.5);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -10px rgba(219, 39, 119, 0.5);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+/* Form Elements */
+.input-glass {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s;
+}
+
+.input-glass:focus {
+    border-color: rgba(167, 139, 250, 0.5);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.1);
+}
+
+/* Casino Style Upgrades */
+@keyframes sparkle {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+        filter: brightness(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+        filter: brightness(1.5);
+    }
+}
+
+@keyframes chasing-lights {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.bg-gold-gradient {
+    background: linear-gradient(to bottom, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+}
+
+.text-gold {
+    background: linear-gradient(to bottom, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+}
+
+.shadow-gold {
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+}
+
+.casino-board {
+    background-image: radial-gradient(circle, #330000 10%, #000000 90%);
+}
+
+.diamond-stud {
+    box-shadow:
+        inset 0 0 2px rgba(255, 255, 255, 0.8),
+        0 0 4px rgba(255, 255, 255, 0.5);
+}
