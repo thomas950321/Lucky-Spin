@@ -6,6 +6,7 @@ import confetti from 'canvas-confetti';
 interface LuckyWheelProps {
     gameState: GameState;
     onSpinComplete: () => void;
+    onSpin: () => void;
 }
 
 const COLORS = [
@@ -19,7 +20,7 @@ const COLORS = [
     '#d946ef', // Fuchsia-500
 ];
 
-export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplete }) => {
+export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplete, onSpin }) => {
     const [rotation, setRotation] = useState(0);
     const [isSpinning, setIsSpinning] = useState(false);
     const users = gameState.users;
@@ -173,7 +174,10 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
                 </div>
 
                 {/* Central Jeweled Button */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div
+                    className="absolute inset-0 flex items-center justify-center cursor-pointer hover:scale-105 transition-transform active:scale-95 z-50"
+                    onClick={!isSpinning ? onSpin : undefined}
+                >
                     <div className="relative group">
                         {/* Outer gold ring */}
                         <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-[#bf953f] to-[#aa771c] shadow-[0_10px_20px_rgba(0,0,0,0.5)] flex items-center justify-center">
@@ -201,8 +205,12 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
                         <div className="relative bg-gradient-to-b from-[#1a1a1a] to-black p-1 rounded-full border-4 border-[#bf953f] shadow-[0_0_50px_rgba(255,215,0,0.5)]">
                             <div className="bg-[radial-gradient(circle,transparent_20%,#000_120%)] p-8 sm:p-12 rounded-full flex flex-col items-center gap-2 border border-[#fcf6ba]/20">
                                 <span className="text-[#bf953f] uppercase tracking-[0.3em] text-xs font-bold">Jackpot Winner</span>
-                                <div className="text-8xl animate-[bounce_1s_infinite] filter drop-shadow-[0_0_15px_rgba(255,215,0,0.5)]">
-                                    {gameState.winner.avatar}
+                                <div className="text-8xl animate-[bounce_1s_infinite] filter drop-shadow-[0_0_15px_rgba(255,215,0,0.5)] flex justify-center">
+                                    {gameState.winner.avatar.startsWith('http') ? (
+                                        <img src={gameState.winner.avatar} className="w-32 h-32 rounded-full object-cover border-4 border-[#bf953f]" alt="Winner" />
+                                    ) : (
+                                        gameState.winner.avatar
+                                    )}
                                 </div>
                                 <h2 className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#fcf6ba] to-[#bf953f] filter drop-shadow-lg font-serif mt-2">
                                     {gameState.winner.name}

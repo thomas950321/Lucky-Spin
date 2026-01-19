@@ -69,7 +69,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ gameState, onStart, onRe
                         <div>
                             <div className="text-xs text-yellow-200 uppercase tracking-wider font-bold mb-1">Previous Winner</div>
                             <div className="text-2xl font-bold text-white flex items-center gap-3">
-                                <span className="text-4xl filter drop-shadow-md">{gameState.winner.avatar}</span>
+                                <span className="text-4xl filter drop-shadow-md flex items-center justify-center">
+                                    {gameState.winner.avatar.startsWith('http') ? (
+                                        <img src={gameState.winner.avatar} alt="Winner" className="w-12 h-12 rounded-full object-cover border-2 border-yellow-200/50" />
+                                    ) : (
+                                        gameState.winner.avatar
+                                    )}
+                                </span>
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-amber-100">{gameState.winner.name}</span>
                             </div>
                         </div>

@@ -6,11 +6,14 @@ import { LuckyWheel } from './LuckyWheel';
 
 interface BigScreenProps {
   gameState: GameState;
+  onStart: () => void;
 }
 
-export const BigScreen: React.FC<BigScreenProps> = ({ gameState }) => {
+export const BigScreen: React.FC<BigScreenProps> = ({ gameState, onStart }) => {
 
   const [showParticipants, setShowParticipants] = React.useState(false);
+
+
 
   const handleSpinComplete = () => {
     confetti({
@@ -86,6 +89,7 @@ export const BigScreen: React.FC<BigScreenProps> = ({ gameState }) => {
             <LuckyWheel
               gameState={gameState}
               onSpinComplete={handleSpinComplete}
+              onSpin={onStart}
             />
           </div>
         )}

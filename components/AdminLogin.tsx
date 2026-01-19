@@ -5,9 +5,10 @@ import { Lock } from 'lucide-react';
 interface AdminLoginProps {
     onLogin: (password: string) => void;
     error?: boolean;
+    isOverlay?: boolean;
 }
 
-export const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, error }) => {
+export const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, error, isOverlay }) => {
     const [password, setPassword] = useState('');
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -15,9 +16,13 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, error }) => {
         onLogin(password);
     };
 
+    const containerStyle = isOverlay
+        ? "fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300"
+        : "min-h-screen bg-slate-900 flex items-center justify-center p-4";
+
     return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-            <div className="bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-700">
+        <div className={containerStyle}>
+            <div className="bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-700 relative">
                 <div className="flex justify-center mb-6">
                     <div className="p-4 bg-purple-500/20 rounded-full">
                         <Lock className="w-8 h-8 text-purple-400" />

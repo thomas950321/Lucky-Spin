@@ -38,7 +38,15 @@ const App: React.FC = () => {
       <div className="min-h-screen text-slate-200 selection:bg-fuchsia-500/30">
         <Nav />
         <Routes>
-          <Route path="/" element={<BigScreen gameState={gameState} />} />
+          <Route
+            path="/"
+            element={
+              <>
+                <BigScreen gameState={gameState} onStart={emitStart} />
+                {!isAdmin && <AdminLogin onLogin={emitLogin} error={loginError} isOverlay />}
+              </>
+            }
+          />
           <Route path="/join" element={<MobileJoin onJoin={emitJoin} gameState={gameState} socket={socket} />} />
           <Route
             path="/admin"

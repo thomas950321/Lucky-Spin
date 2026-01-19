@@ -196,25 +196,37 @@ io.on('connection', (socket) => {
 
     socket.on('JOIN', (userData) => {
         if (!userData || !userData.lineUserId) return;
+        console.log(`[Socket] Join request from ${userData.name} (${userData.lineUserId})`);
 
-        // Check for duplicate Line User ID (One Entry Per Account)
-        if (gameState.users.find(u => u.lineUserId === userData.lineUserId)) {
-            socket.emit('JOIN_ERROR', '每位使用者只能參加一次！');
-            return;
+        // Check if user already exists
+        const existingUserIndex = gameState.users.findIndex(u => u.lineUserId === userData.lineUserId);
+
+        if (existingUserIndex !== -1) {
+            // Update existing user's socket ID (handle refresh/reconnect)
+            // But don't change their position in the array or other stats if we tracked them
+            console.log(`[Socket] User ${userData.name} re-connected/updated.`);
+            gameState.users[existingUserIndex].id = socket.id;
+            // Optionally update avatar/name if changed
+            gameState.users[existingUserIndex].name = userData.name;
+            gameState.users[existingUserIndex].avatar = userData.avatar;
+        } else {
+            // New User
+            const newUser = {
+                id: socket.id,
+                lineUserId: userData.lineUserId,
+                name: userData.name,
+                avatar: userData.avatar
+            };
+            gameState.users.push(newUser);
+            console.log(`[Socket] New user joined: ${userData.name}`);
         }
 
-        const newUser = {
-            id: socket.id,
-            lineUserId: userData.lineUserId,
-            name: userData.name,
-            avatar: userData.avatar
-        };
-        gameState.users.push(newUser);
         io.emit('UPDATE_STATE', gameState);
     });
 
     socket.on('START_DRAW', () => {
-        if (socket.id !== adminSocketId) return;
+        // Allow anyone to start draw (BigScreen or Admin)
+        // if (socket.id !== adminSocketId) return; 
         if (gameState.users.length > 0) {
             gameState.status = 'ROLLING';
             gameState.winner = null;
