@@ -82,6 +82,35 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ gameState, onStart, onRe
                     </div>
                 )}
 
+                {/* Winner History */}
+                <div className="glass-card p-6 border-purple-500/30">
+                    <h3 className="text-purple-300 uppercase tracking-wider font-bold mb-4 text-sm flex items-center gap-2">
+                        <Trophy size={16} />
+                        Winner History
+                    </h3>
+                    <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                        {gameState.winnersHistory && gameState.winnersHistory.length > 0 ? (
+                            [...gameState.winnersHistory].reverse().map((winner, index) => (
+                                <div key={index} className="bg-white/5 p-3 rounded-lg flex items-center justify-between border border-white/5 hover:bg-white/10 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden border border-white/10">
+                                            {winner.avatar.startsWith('http') ? (
+                                                <img src={winner.avatar} alt={winner.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-sm">{winner.avatar}</span>
+                                            )}
+                                        </div>
+                                        <div className="text-slate-200 font-medium">{winner.name}</div>
+                                    </div>
+                                    <div className="text-slate-500 text-xs font-mono">Round {gameState.winnersHistory.length - index}</div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="text-slate-500 text-center py-4 text-sm italic">No winners yet</div>
+                        )}
+                    </div>
+                </div>
+
             </div>
         </div>
     );

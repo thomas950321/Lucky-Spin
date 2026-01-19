@@ -52,6 +52,7 @@ let gameState = {
     users: [],
     status: 'WAITING',
     winner: null,
+    winnersHistory: []
 };
 let adminSocketId = null;
 
@@ -224,6 +225,9 @@ io.on('connection', (socket) => {
         io.emit('UPDATE_STATE', gameState);
     });
 
+    // Initial State
+    gameState.winnersHistory = gameState.winnersHistory || [];
+
     socket.on('START_DRAW', () => {
         // Allow anyone to start draw (BigScreen or Admin)
         // if (socket.id !== adminSocketId) return; 
@@ -235,6 +239,10 @@ io.on('connection', (socket) => {
             setTimeout(() => {
                 const winnerIndex = Math.floor(Math.random() * gameState.users.length);
                 gameState.winner = gameState.users[winnerIndex];
+                // Add to history
+                if (!gameState.winnersHistory) gameState.winnersHistory = [];
+                gameState.winnersHistory.push(gameState.winner);
+
                 gameState.status = 'WINNER';
                 io.emit('UPDATE_STATE', gameState);
             }, 500);
@@ -246,6 +254,7 @@ io.on('connection', (socket) => {
         gameState.status = 'WAITING';
         gameState.winner = null;
         gameState.users = [];
+        gameState.winnersHistory = [];
         io.emit('UPDATE_STATE', gameState);
     });
 

@@ -10,9 +10,10 @@ export interface GameState {
   users: User[];
   status: GameStatus;
   winner: User | null;
+  winnersHistory: User[];
 }
 
-export type EventType = 
+export type EventType =
   | { type: 'JOIN'; payload: User }
   | { type: 'RESET'; payload: null }
   | { type: 'START_DRAW'; payload: null }

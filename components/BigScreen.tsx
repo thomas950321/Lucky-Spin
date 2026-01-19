@@ -27,6 +27,33 @@ export const BigScreen: React.FC<BigScreenProps> = ({ gameState, onStart }) => {
     <div className="min-h-screen flex flex-col overflow-hidden relative">
       {/* Header Removed for Immersive Experience */}
 
+      {/* Winner History Sidebar */}
+      {gameState.winnersHistory && gameState.winnersHistory.length > 0 && (
+        <div className="absolute left-6 top-1/2 -translate-y-1/2 w-64 max-h-[70vh] glass-card p-4 overflow-hidden flex flex-col z-10 border-yellow-500/20 animate-in slide-in-from-left duration-500">
+          <h3 className="text-yellow-500 uppercase tracking-widest text-xs font-bold mb-4 flex items-center gap-2 pb-2 border-b border-white/5">
+            <Trophy size={14} />
+            Hall of Fame
+          </h3>
+          <div className="overflow-y-auto custom-scrollbar flex-1 space-y-2 pr-1">
+            {[...gameState.winnersHistory].reverse().map((winner, index) => (
+              <div key={index} className="bg-slate-900/60 p-3 rounded-lg flex items-center gap-3 border border-white/5 group hover:border-yellow-500/30 transition-colors">
+                <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-yellow-500/20 shadow-lg">
+                  {winner.avatar.startsWith('http') ? (
+                    <img src={winner.avatar} alt={winner.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-lg">{winner.avatar}</span>
+                  )}
+                </div>
+                <div>
+                  <div className="text-yellow-100 font-bold text-sm truncate max-w-[120px]">{winner.name}</div>
+                  <div className="text-yellow-500/50 text-[10px] uppercase tracking-wider">Pass {gameState.winnersHistory.length - index}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Floating Participant Badge */}
       <button
         onClick={() => setShowParticipants(true)}

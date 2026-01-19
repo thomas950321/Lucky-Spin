@@ -8,6 +8,7 @@ export const useGameSocket = () => {
         users: [],
         status: 'WAITING',
         winner: null,
+        winnersHistory: [],
     });
 
     const [isAdmin, setIsAdmin] = useState(false);
