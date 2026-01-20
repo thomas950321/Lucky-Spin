@@ -150,7 +150,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
                                 style={{ transform: `rotate(${centerAngle}deg)` }}
                             >
                                 <div
-                                    className="absolute right-0 flex items-center justify-end pr-10 sm:pr-14 md:pr-20"
+                                    className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center justify-center"
                                     style={{ width: '50%', transformOrigin: 'left center' }}
                                 >
                                     <div className="flex flex-col items-center gap-2" style={{ transform: `rotate(90deg)` }}>
