@@ -39,9 +39,24 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
         // Trigger spin ONLY when status is ROLLING (Start of draw)
         // We do NOT spin on WINNER status to prevent double-spinning or auto-spin on refresh
         if (gameState.status === 'ROLLING' && gameState.winner && !isSpinning) {
-            const winnerIndex = users.findIndex(u => u.id === gameState.winner?.id);
+            console.log('[LuckyWheel] Finding winner:', gameState.winner);
+            console.log('[LuckyWheel] Users:', users);
+
+            const winnerIndex = users.findIndex(u => {
+                // If both have lineUserId, strict match on that
+                if (u.lineUserId && gameState.winner?.lineUserId) {
+                    return u.lineUserId === gameState.winner.lineUserId;
+                }
+                // Fallback to socket ID only if lineUserId is missing
+                return u.id === gameState.winner?.id;
+            });
+
+            console.log('[LuckyWheel] Winner Index:', winnerIndex);
+
             if (winnerIndex !== -1) {
                 spinToWinner(winnerIndex);
+            } else {
+                console.error('[LuckyWheel] Winner not found in users array!');
             }
         } else if (gameState.status === 'WAITING') {
             setRotation(0);
@@ -57,6 +72,8 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
         const randomOffset = (Math.random() - 0.5) * (segmentAngle * 0.6); // Tighter landing
         const winnerCenterAngle = (winnerIndex + 0.5) * segmentAngle;
 
+        console.log(`[LuckyWheel] Spin Debug: Index=${winnerIndex}, SegAngle=${segmentAngle}, Center=${winnerCenterAngle}`);
+
         // Base alignment: To land at 0deg (Top), we rotate by -winnerAngle
         // Using 360 as base to keep numbers positive before loop
         let targetRotation = 360 - winnerCenterAngle + randomOffset;
@@ -65,6 +82,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
             targetRotation += 360;
         }
 
+        console.log(`[LuckyWheel] Target Rotation: ${targetRotation}`);
         setRotation(targetRotation);
 
         setTimeout(() => {
@@ -147,13 +165,13 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
                             <div
                                 key={user.id}
                                 className="absolute w-full h-full top-0 left-0 flex items-center justify-center origin-center pointer-events-none"
-                                style={{ transform: `rotate(${centerAngle - 90}deg)` }}
+                                style={{ transform: `rotate(${centerAngle}deg)` }}
                             >
                                 <div
-                                    className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center justify-center"
-                                    style={{ width: '50%', transformOrigin: 'left center' }}
+                                    className="absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center justify-start pt-10 sm:pt-14 md:pt-16 pb-4"
+                                    style={{ height: '50%', transformOrigin: 'bottom center' }}
                                 >
-                                    <div className="flex flex-col items-center gap-2" style={{ transform: `rotate(90deg)` }}>
+                                    <div className="flex flex-col items-center gap-2">
                                         {/* Gold Framed Avatar */}
                                         <div className="relative p-1 rounded-full bg-gradient-to-tr from-[#bf953f] to-[#fcf6ba] shadow-lg">
                                             <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black/20 flex items-center justify-center text-3xl sm:text-4xl backdrop-blur-sm overflow-hidden">

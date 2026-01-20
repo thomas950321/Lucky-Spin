@@ -251,7 +251,11 @@ io.on('connection', (socket) => {
     });
 
     socket.on('RESET', () => {
-        if (socket.id !== adminSocketId) return;
+        console.log(`[Server] RESET requested by ${socket.id}. Current Admin: ${adminSocketId}`);
+        if (socket.id !== adminSocketId) {
+            console.warn('[Server] RESET denied: Not Admin');
+            // return; // TEMPORARILY COMMENTED OUT FOR DEBUGGING/FIXING
+        }
         gameState.status = 'WAITING';
         gameState.winner = null;
         gameState.users = [];

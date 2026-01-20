@@ -56,6 +56,17 @@ const App: React.FC = () => {
                   gameState={gameState}
                   onStart={emitStart}
                   onReset={emitReset}
+                  onAddMockUser={(count) => {
+                    for (let i = 0; i < count; i++) {
+                      const randomId = Math.random().toString(36).substring(7);
+                      const mockUser = {
+                        lineUserId: `mock_${randomId}`,
+                        name: `Bot_${Math.floor(Math.random() * 1000)}`,
+                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${randomId}`
+                      };
+                      socket?.emit('JOIN', mockUser);
+                    }
+                  }}
                 />
               ) : (
                 <AdminLogin onLogin={emitLogin} error={loginError} />

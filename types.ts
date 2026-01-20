@@ -2,6 +2,7 @@ export interface User {
   id: string;
   name: string;
   avatar: string;
+  lineUserId?: string;
 }
 
 export type GameStatus = 'WAITING' | 'ROLLING' | 'WINNER';

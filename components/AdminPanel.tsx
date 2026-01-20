@@ -6,9 +6,10 @@ interface AdminPanelProps {
     gameState: GameState;
     onStart: () => void;
     onReset: () => void;
+    onAddMockUser?: (count: number) => void;
 }
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ gameState, onStart, onReset }) => {
+export const AdminPanel: React.FC<AdminPanelProps> = ({ gameState, onStart, onReset, onAddMockUser }) => {
     return (
         <div className="min-h-screen w-full relative overflow-hidden">
             {/* Background Image (Optional, inherited from body but explicit here for safety if needed) */}
@@ -90,6 +91,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ gameState, onStart, onRe
                             </div>
                         </button>
                     </div>
+
+                    {/* Debug Tools */}
+                    {onAddMockUser && (
+                        <div className="glass-card p-6 border-dashed border-slate-700">
+                            <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-4">Debug Tools</h3>
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => onAddMockUser(1)}
+                                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm text-slate-300 font-medium transition-colors border border-white/5"
+                                >
+                                    + Add 1 Bot
+                                </button>
+                                <button
+                                    onClick={() => onAddMockUser(5)}
+                                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm text-slate-300 font-medium transition-colors border border-white/5"
+                                >
+                                    + Add 5 Bots
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Last Winner Info */}
                     {gameState.winner && (
