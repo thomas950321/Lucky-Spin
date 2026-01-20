@@ -59,7 +59,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
 
         // Base alignment: To land at 0deg (Top), we rotate by -winnerAngle
         // Using 360 as base to keep numbers positive before loop
-        let targetRotation = 360 - winnerCenterAngle + randomOffset;
+        let targetRotation = 360 - winnerCenterAngle + randomOffset - 90;
         const current = rotation;
         while (targetRotation < current + extraSpins) {
             targetRotation += 360;
