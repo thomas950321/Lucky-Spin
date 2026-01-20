@@ -23,7 +23,43 @@ const COLORS = [
 export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplete, onSpin }) => {
     const [rotation, setRotation] = useState(0);
     const [isSpinning, setIsSpinning] = useState(false);
+    const [hasInteracted, setHasInteracted] = useState(false);
     const users = gameState.users;
+
+    // Sound Effects
+    // Using local files in public/ folder to avoid CDN 403 Forbidden issues
+    const spinAudio = useRef(new Audio('/spin.mp3'));
+    const winAudio = useRef(new Audio('/win.mp3'));
+
+    const enableAudio = () => {
+        // Unlock AudioContext by playing a silent snippet
+        spinAudio.current.play().then(() => {
+            spinAudio.current.pause();
+            spinAudio.current.currentTime = 0;
+            // setHasInteracted(true); // No longer needed
+        }).catch(e => console.error("Audio unlock failed: User interaction required to play audio.", e));
+    };
+
+    useEffect(() => {
+        spinAudio.current.loop = true;
+        spinAudio.current.volume = 1.0; // Max volume for clearer ticking
+        winAudio.current.volume = 0.6;
+
+        // Auto-unlock on ANY click (e.g. Login button, background click)
+        const unlockHandler = () => {
+            enableAudio();
+            window.removeEventListener('click', unlockHandler);
+            window.removeEventListener('touchstart', unlockHandler);
+        };
+
+        window.addEventListener('click', unlockHandler);
+        window.addEventListener('touchstart', unlockHandler);
+
+        return () => {
+            window.removeEventListener('click', unlockHandler);
+            window.removeEventListener('touchstart', unlockHandler);
+        };
+    }, []);
 
     // Casino High-End Colors
     const SEGMENT_COLORS = [
@@ -39,8 +75,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
         // Trigger spin ONLY when status is ROLLING (Start of draw)
         // We do NOT spin on WINNER status to prevent double-spinning or auto-spin on refresh
         if (gameState.status === 'ROLLING' && gameState.winner && !isSpinning) {
-            console.log('[LuckyWheel] Finding winner:', gameState.winner);
-            console.log('[LuckyWheel] Users:', users);
+
 
             const winnerIndex = users.findIndex(u => {
                 // If both have lineUserId, strict match on that
@@ -51,7 +86,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
                 return u.id === gameState.winner?.id;
             });
 
-            console.log('[LuckyWheel] Winner Index:', winnerIndex);
+
 
             if (winnerIndex !== -1) {
                 spinToWinner(winnerIndex);
@@ -72,7 +107,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
         const randomOffset = (Math.random() - 0.5) * (segmentAngle * 0.6); // Tighter landing
         const winnerCenterAngle = (winnerIndex + 0.5) * segmentAngle;
 
-        console.log(`[LuckyWheel] Spin Debug: Index=${winnerIndex}, SegAngle=${segmentAngle}, Center=${winnerCenterAngle}`);
+
 
         // Base alignment: To land at 0deg (Top), we rotate by -winnerAngle
         // Using 360 as base to keep numbers positive before loop
@@ -82,12 +117,23 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
             targetRotation += 360;
         }
 
-        console.log(`[LuckyWheel] Target Rotation: ${targetRotation}`);
+
         setRotation(targetRotation);
+
+        // Play Spin Sound
+        spinAudio.current.currentTime = 0;
+        spinAudio.current.play().catch(e => console.warn("Audio play failed (user interaction needed first):", e));
 
         setTimeout(() => {
             setIsSpinning(false);
             onSpinComplete();
+
+            // Stop Spin Sound
+            spinAudio.current.pause();
+
+            // Play Win Sound
+            winAudio.current.currentTime = 0;
+            winAudio.current.play().catch(e => console.warn("Win Audio failed:", e));
         }, 8000); // 8s spin for suspense
     };
 
@@ -217,31 +263,34 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
                 </div>
             </div>
 
-            {/* Winner Badge - Casino Chip Style */}
-            {gameState.status === 'WINNER' && !isSpinning && gameState.winner && (
-                <div className="absolute bottom-4 sm:bottom-10 z-50 animate-in zoom-in slide-in-from-bottom duration-700 pointer-events-none">
-                    <div className="relative">
-                        {/* Spinning rays background */}
-                        <div className="absolute inset-0 bg-yellow-500/30 blur-2xl animate-[spin_4s_linear_infinite]"></div>
 
-                        <div className="relative bg-gradient-to-b from-[#1a1a1a] to-black p-1 rounded-full border-4 border-[#bf953f] shadow-[0_0_50px_rgba(255,215,0,0.5)]">
-                            <div className="bg-[radial-gradient(circle,transparent_20%,#000_120%)] p-8 sm:p-12 rounded-full flex flex-col items-center gap-2 border border-[#fcf6ba]/20">
-                                <span className="text-[#bf953f] uppercase tracking-[0.3em] text-xs font-bold">Jackpot Winner</span>
-                                <div className="text-8xl animate-[bounce_1s_infinite] filter drop-shadow-[0_0_15px_rgba(255,215,0,0.5)] flex justify-center">
-                                    {gameState.winner.avatar.startsWith('http') ? (
-                                        <img src={gameState.winner.avatar} className="w-32 h-32 rounded-full object-cover border-4 border-[#bf953f]" alt="Winner" />
-                                    ) : (
-                                        gameState.winner.avatar
-                                    )}
+            {/* Winner Badge - Casino Chip Style */}
+            {
+                gameState.status === 'WINNER' && !isSpinning && gameState.winner && (
+                    <div className="absolute bottom-4 sm:bottom-10 z-50 animate-in zoom-in slide-in-from-bottom duration-700 pointer-events-none">
+                        <div className="relative">
+                            {/* Spinning rays background */}
+                            <div className="absolute inset-0 bg-yellow-500/30 blur-2xl animate-[spin_4s_linear_infinite]"></div>
+
+                            <div className="relative bg-gradient-to-b from-[#1a1a1a] to-black p-1 rounded-full border-4 border-[#bf953f] shadow-[0_0_50px_rgba(255,215,0,0.5)]">
+                                <div className="bg-[radial-gradient(circle,transparent_20%,#000_120%)] p-8 sm:p-12 rounded-full flex flex-col items-center gap-2 border border-[#fcf6ba]/20">
+                                    <span className="text-[#bf953f] uppercase tracking-[0.3em] text-xs font-bold">Jackpot Winner</span>
+                                    <div className="text-8xl animate-[bounce_1s_infinite] filter drop-shadow-[0_0_15px_rgba(255,215,0,0.5)] flex justify-center">
+                                        {gameState.winner.avatar.startsWith('http') ? (
+                                            <img src={gameState.winner.avatar} className="w-32 h-32 rounded-full object-cover border-4 border-[#bf953f]" alt="Winner" />
+                                        ) : (
+                                            gameState.winner.avatar
+                                        )}
+                                    </div>
+                                    <h2 className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#fcf6ba] to-[#bf953f] filter drop-shadow-lg font-serif mt-2">
+                                        {gameState.winner.name}
+                                    </h2>
                                 </div>
-                                <h2 className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#fcf6ba] to-[#bf953f] filter drop-shadow-lg font-serif mt-2">
-                                    {gameState.winner.name}
-                                </h2>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
         </div>
     );
 };

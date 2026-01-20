@@ -46,7 +46,7 @@ export const BigScreen: React.FC<BigScreenProps> = ({ gameState, onStart }) => {
                 </div>
                 <div>
                   <div className="text-yellow-100 font-bold text-sm truncate max-w-[120px]">{winner.name}</div>
-                  <div className="text-yellow-500/50 text-[10px] uppercase tracking-wider">Pass {gameState.winnersHistory.length - index}</div>
+                  <div className="text-yellow-500/50 text-[10px] uppercase tracking-wider">第 {gameState.winnersHistory.length - index} 位</div>
                 </div>
               </div>
             ))}

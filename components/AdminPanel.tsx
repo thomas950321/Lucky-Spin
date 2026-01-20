@@ -12,9 +12,9 @@ interface AdminPanelProps {
 export const AdminPanel: React.FC<AdminPanelProps> = ({ gameState, onStart, onReset, onAddMockUser }) => {
     return (
         <div className="min-h-screen w-full relative overflow-hidden">
-            {/* Background Image (Optional, inherited from body but explicit here for safety if needed) */}
+            {/* Background Image is inherited from body */}
 
-            {/* Winner History Sidebar (Copied from BigScreen) */}
+            {/* Winner History Sidebar */}
             {gameState.winnersHistory && gameState.winnersHistory.length > 0 && (
                 <div className="absolute left-6 top-1/2 -translate-y-1/2 w-64 max-h-[70vh] glass-card p-4 overflow-hidden flex flex-col z-10 border-purple-500/20 animate-in slide-in-from-left duration-500">
                     <h3 className="text-purple-300 uppercase tracking-widest text-xs font-bold mb-4 flex items-center gap-2 pb-2 border-b border-white/5">
@@ -34,7 +34,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ gameState, onStart, onRe
                                 <div>
                                     <div className="text-purple-100 font-bold text-sm truncate max-w-[120px]">{winner.name}</div>
                                     <div className="text-purple-500/50 text-[10px] uppercase tracking-wider">
-                                        第 {gameState.winnersHistory.length - index} 屆
+                                        第 {gameState.winnersHistory.length - index} 位
                                     </div>
                                 </div>
                             </div>

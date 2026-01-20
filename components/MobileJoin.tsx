@@ -14,6 +14,7 @@ interface MobileJoinProps {
 export const MobileJoin: React.FC<MobileJoinProps> = ({ onJoin, gameState, socket }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [customName, setCustomName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [hasJoined, setHasJoined] = useState(false);
 
@@ -28,6 +29,7 @@ export const MobileJoin: React.FC<MobileJoinProps> = ({ onJoin, gameState, socke
       if (data.authenticated) {
         setIsAuthenticated(true);
         setCurrentUser(data);
+        setCustomName(data.name);
       }
     } catch (error) {
       console.error("Auth check failed", error);
@@ -42,8 +44,12 @@ export const MobileJoin: React.FC<MobileJoinProps> = ({ onJoin, gameState, socke
 
   const handleJoin = () => {
     if (socket && currentUser) {
+      if (!customName.trim()) {
+        alert("請輸入名稱");
+        return;
+      }
       socket.emit('JOIN', {
-        name: currentUser.name,
+        name: customName.trim(), // Use custom name
         avatar: currentUser.avatar,
         lineUserId: currentUser.lineUserId
       });
@@ -71,7 +77,7 @@ export const MobileJoin: React.FC<MobileJoinProps> = ({ onJoin, gameState, socke
           <p className="text-slate-300 mb-6">請在大螢幕上尋找您的頭像。</p>
           <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
             <img src={currentUser?.avatar} alt="Avatar" className="w-20 h-20 rounded-full mx-auto mb-4 border-2 border-white/20" />
-            <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-300 to-pink-300">{currentUser?.name}</div>
+            <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-300 to-pink-300">{customName}</div>
           </div>
           <div className="mt-8 text-sm text-slate-400">
             抽獎結束前請勿關閉此頁面
@@ -116,15 +122,24 @@ export const MobileJoin: React.FC<MobileJoinProps> = ({ onJoin, gameState, socke
           <div className="space-y-6 animate-in fade-in">
             <div className="flex flex-col items-center gap-4">
               <img src={currentUser?.avatar} className="w-24 h-24 rounded-full border-4 border-white/10 shadow-xl" />
-              <div className="text-center">
-                <p className="text-slate-400 text-sm">Welcome</p>
-                <p className="text-2xl font-bold text-white">{currentUser?.name}</p>
+              <div className="w-full">
+                <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">
+                  顯示名稱 (可修改)
+                </label>
+                <input
+                  type="text"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-center text-xl font-bold text-white focus:outline-none focus:border-pink-500/50 focus:bg-white/10 transition-all"
+                  placeholder="輸入您的名稱"
+                />
               </div>
             </div>
 
             <button
               onClick={handleJoin}
-              className="w-full btn-primary text-white font-bold py-4 rounded-xl text-xl shadow-lg flex items-center justify-center gap-2 group"
+              disabled={!customName.trim()}
+              className="w-full btn-primary text-white font-bold py-4 rounded-xl text-xl shadow-lg flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <UserPlus size={24} className="group-hover:scale-110 transition-transform" />
               確認加入
