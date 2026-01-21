@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameSocket } from '../services/socket';
-import { Play, RotateCcw, Users, Trophy, PlusCircle, ArrowLeft } from 'lucide-react';
+import { Play, RotateCcw, Users, Trophy, PlusCircle, ArrowLeft, Download } from 'lucide-react';
 import { AdminLogin } from './AdminLogin';
 
 export const AdminPanel: React.FC = () => {
@@ -54,6 +54,39 @@ export const AdminPanel: React.FC = () => {
         }
     };
 
+    const exportToCSV = () => {
+        if (!gameState.winnersHistory || gameState.winnersHistory.length === 0) {
+            alert("目前沒有中獎名單可匯出");
+            return;
+        }
+
+        const headers = ["順序 (Rank)", "名稱 (Name)", "LINE ID / ID", "頭像網址 (Avatar URL)"];
+
+        // Add BOM for Excel UTF-8 compatibility
+        let csvContent = "\uFEFF";
+        csvContent += headers.join(",") + "\n";
+
+        [...gameState.winnersHistory].reverse().forEach((winner, index) => {
+            const row = [
+                gameState.winnersHistory.length - index,
+                `"${winner.name.replace(/"/g, '""')}"`, // Escape quotes
+                `"${winner.lineUserId || winner.id}"`,
+                `"${winner.avatar}"`
+            ];
+            csvContent += row.join(",") + "\n";
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        const dateStr = new Date().toISOString().slice(0, 10);
+        link.setAttribute("download", `winner_list_${eventConfig?.title || 'event'}_${dateStr}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className="h-screen w-full relative overflow-hidden" style={containerStyle}>
             {/* Background Image is inherited from body */}
@@ -61,10 +94,19 @@ export const AdminPanel: React.FC = () => {
             {/* Winner History Sidebar */}
             {gameState.winnersHistory && gameState.winnersHistory.length > 0 && (
                 <div className="absolute left-6 top-1/2 -translate-y-1/2 w-64 max-h-[70vh] glass-card p-4 overflow-hidden flex flex-col z-10 border-purple-500/20 animate-in slide-in-from-left duration-500">
-                    <h3 className="text-purple-300 uppercase tracking-widest text-xs font-bold mb-4 flex items-center gap-2 pb-2 border-b border-white/5">
-                        <Trophy size={14} />
-                        名人堂
-                    </h3>
+                    <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-2">
+                        <h3 className="text-purple-300 uppercase tracking-widest text-xs font-bold flex items-center gap-2">
+                            <Trophy size={14} />
+                            名人堂
+                        </h3>
+                        <button
+                            onClick={exportToCSV}
+                            className="text-purple-300 hover:text-white transition-colors p-1 rounded hover:bg-white/10"
+                            title="匯出 Excel (CSV)"
+                        >
+                            <Download size={14} />
+                        </button>
+                    </div>
                     <div className="overflow-y-auto custom-scrollbar flex-1 space-y-2 pr-1">
                         {[...gameState.winnersHistory].reverse().map((winner, index) => (
                             <div key={index} className="bg-slate-900/60 p-3 rounded-lg flex items-center gap-3 border border-white/5 group hover:border-purple-500/30 transition-colors">
