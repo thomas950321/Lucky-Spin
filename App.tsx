@@ -3,9 +3,7 @@ import { HashRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { BigScreen } from './components/BigScreen';
 import { MobileJoin } from './components/MobileJoin';
 import { AdminPanel } from './components/AdminPanel';
-
-import { AdminLogin } from './components/AdminLogin';
-import { useGameSocket } from './services/socket';
+import { EventCreator } from './components/EventCreator';
 import { Monitor, Smartphone, Settings } from 'lucide-react';
 import './index.css';
 
@@ -13,7 +11,7 @@ const Nav: React.FC = () => {
   const location = useLocation();
 
   // Hide nav on Big Screen to keep it clean, show on others for easy testing navigation
-  if (location.pathname === '/') return null;
+  if (location.pathname === '/' || location.pathname.startsWith('/event/')) return null;
 
   return (
     <nav className="fixed top-6 right-6 z-50 glass-card rounded-full p-2 flex gap-3 animate-float">
@@ -31,48 +29,23 @@ const Nav: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  const { gameState, emitJoin, emitReset, emitStart, isAdmin, loginError, emitLogin, socket } = useGameSocket();
-
   return (
     <HashRouter>
       <div className="min-h-screen text-slate-200 selection:bg-fuchsia-500/30">
         <Nav />
         <Routes>
-          <Route
-            path="/"
-            element={
-              <>
-                <BigScreen gameState={gameState} onStart={emitStart} />
-                {!isAdmin && <AdminLogin onLogin={emitLogin} error={loginError} isOverlay />}
-              </>
-            }
-          />
-          <Route path="/join" element={<MobileJoin onJoin={emitJoin} gameState={gameState} socket={socket} />} />
-          <Route
-            path="/admin"
-            element={
-              isAdmin ? (
-                <AdminPanel
-                  gameState={gameState}
-                  onStart={emitStart}
-                  onReset={emitReset}
-                  onAddMockUser={(count) => {
-                    for (let i = 0; i < count; i++) {
-                      const randomId = Math.random().toString(36).substring(7);
-                      const mockUser = {
-                        lineUserId: `mock_${randomId}`,
-                        name: `Bot_${Math.floor(Math.random() * 1000)}`,
-                        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${randomId}`
-                      };
-                      socket?.emit('JOIN', mockUser);
-                    }
-                  }}
-                />
-              ) : (
-                <AdminLogin onLogin={emitLogin} error={loginError} />
-              )
-            }
-          />
+          {/* Default "Main" Event Routes */}
+          <Route path="/" element={<BigScreen />} />
+          <Route path="/join" element={<MobileJoin />} />
+          <Route path="/admin" element={<AdminPanel />} />
+
+          {/* Dynamic Event Routes */}
+          <Route path="/event/:id" element={<BigScreen />} />
+          <Route path="/event/:id/join" element={<MobileJoin />} />
+
+          {/* Admin Event Management */}
+          <Route path="/admin/events" element={<EventCreator />} />
+          <Route path="/admin/event/:id" element={<AdminPanel />} />
         </Routes>
       </div>
     </HashRouter>

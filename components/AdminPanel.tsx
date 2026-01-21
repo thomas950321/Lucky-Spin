@@ -1,17 +1,61 @@
-import React from 'react';
-import { GameState } from '../types';
-import { Play, RotateCcw, Users, Trophy } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useGameSocket } from '../services/socket';
+import { Play, RotateCcw, Users, Trophy, PlusCircle, ArrowLeft } from 'lucide-react';
+import { AdminLogin } from './AdminLogin';
 
-interface AdminPanelProps {
-    gameState: GameState;
-    onStart: () => void;
-    onReset: () => void;
-    onAddMockUser?: (count: number) => void;
-}
+export const AdminPanel: React.FC = () => {
+    const { id: eventId } = useParams();
+    const navigate = useNavigate();
+    const { gameState, emitStart, emitReset, joinEventRoom, emitJoin, socket, isAdmin, emitLogin, loginError } = useGameSocket();
+    const [eventConfig, setEventConfig] = useState<{ title?: string, background_url?: string } | null>(null);
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ gameState, onStart, onReset, onAddMockUser }) => {
+    useEffect(() => {
+        if (socket) {
+            joinEventRoom(eventId || 'default');
+        }
+
+        if (eventId) {
+            fetch(`/api/events/${eventId}`)
+                .then(res => res.json())
+                .then(data => setEventConfig(data))
+                .catch(console.error);
+        }
+    }, [eventId, socket, joinEventRoom]);
+
+    if (!isAdmin) {
+        return <AdminLogin onLogin={emitLogin} error={loginError} />;
+    }
+
+    // Custom Background Style
+    const containerStyle = eventConfig?.background_url ? {
+        backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.4)), url('${eventConfig.background_url}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+    } : {};
+
+    // Mock User Helper
+    const onAddMockUser = (count: number) => {
+        for (let i = 0; i < count; i++) {
+            const randomId = Math.random().toString(36).substring(7);
+            const mockUser = {
+                lineUserId: `mock_${randomId}`,
+                name: `Bot_${Math.floor(Math.random() * 1000)}`,
+                // using v9 and robust seed
+                avatar: `https://api.dicebear.com/9.x/avataaars/svg?seed=${randomId}`
+            };
+            // socket.emit directly to bypass hook wrapper simplification if needed or update hook
+            // Hook's emitJoin uses strict signature. Let's use socket directly for mock or update hook.
+            // Keeping it simple with direct socket emit for "mock" which is dev only
+            socket?.emit('JOIN', {
+                user: mockUser,
+                eventId: eventId || 'default'
+            });
+        }
+    };
+
     return (
-        <div className="min-h-screen w-full relative overflow-hidden">
+        <div className="h-screen w-full relative overflow-hidden" style={containerStyle}>
             {/* Background Image is inherited from body */}
 
             {/* Winner History Sidebar */}
@@ -24,9 +68,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ gameState, onStart, onRe
                     <div className="overflow-y-auto custom-scrollbar flex-1 space-y-2 pr-1">
                         {[...gameState.winnersHistory].reverse().map((winner, index) => (
                             <div key={index} className="bg-slate-900/60 p-3 rounded-lg flex items-center gap-3 border border-white/5 group hover:border-purple-500/30 transition-colors">
-                                <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-purple-500/20 shadow-lg">
+                                <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-purple-500/20 shadow-lg relative">
                                     {winner.avatar.startsWith('http') ? (
-                                        <img src={winner.avatar} alt={winner.name} className="w-full h-full object-cover" />
+                                        <>
+                                            <img
+                                                src={winner.avatar}
+                                                alt={winner.name}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.currentTarget.style.display = 'none';
+                                                    e.currentTarget.parentElement?.querySelector('.sidebar-fallback')?.classList.remove('hidden');
+                                                }}
+                                            />
+                                            <div className="sidebar-fallback hidden w-full h-full flex items-center justify-center bg-violet-600 text-white font-bold text-xs">
+                                                {winner.name.charAt(0)}
+                                            </div>
+                                        </>
                                     ) : (
                                         <span className="text-lg">{winner.avatar}</span>
                                     )}
@@ -46,6 +103,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ gameState, onStart, onRe
             {/* Main Content Area */}
             <div className="h-full w-full overflow-y-auto py-12 px-4 pb-24">
                 <div className="max-w-2xl w-full mx-auto space-y-8">
+
+                    <div className="flex justify-between items-center">
+                        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                            {eventConfig?.title ? `${eventConfig.title} (Admin)` : '管理後台'}
+                        </h1>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => navigate('/admin/events')}
+                                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white font-bold flex items-center gap-2 transition-colors shadow-lg shadow-purple-500/20"
+                            >
+                                <PlusCircle size={18} />
+                                建立新活動
+                            </button>
+                            {eventId && (
+                                <button
+                                    onClick={() => navigate('/admin')}
+                                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300 flex items-center gap-2 transition-colors"
+                                >
+                                    <ArrowLeft size={18} />
+                                    返回預設房
+                                </button>
+                            )}
+                        </div>
+                    </div>
 
                     {/* Header Stat */}
                     <div className="glass-card p-10 relative overflow-hidden group hover:scale-[1.01] transition-transform duration-500">
@@ -67,7 +148,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ gameState, onStart, onRe
                     {/* Controls */}
                     <div className="grid md:grid-cols-2 gap-6">
                         <button
-                            onClick={onStart}
+                            onClick={() => emitStart(eventId || 'default')}
                             disabled={gameState.users.length === 0 || gameState.status === 'ROLLING'}
                             className="group relative glass-card p-8 transition-all duration-300 hover:border-green-400/50 hover:bg-green-500/5 hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:border-white/10"
                         >
@@ -80,7 +161,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ gameState, onStart, onRe
                         </button>
 
                         <button
-                            onClick={onReset}
+                            onClick={() => emitReset(eventId || 'default')}
                             className="group relative glass-card p-8 transition-all duration-300 hover:border-red-400/50 hover:bg-red-500/5 hover:-translate-y-1"
                         >
                             <div className="flex flex-col items-center gap-4">
@@ -93,25 +174,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ gameState, onStart, onRe
                     </div>
 
                     {/* Debug Tools */}
-                    {onAddMockUser && (
-                        <div className="glass-card p-6 border-dashed border-slate-700">
-                            <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-4">Debug Tools</h3>
-                            <div className="flex gap-4">
-                                <button
-                                    onClick={() => onAddMockUser(1)}
-                                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm text-slate-300 font-medium transition-colors border border-white/5"
-                                >
-                                    + Add 1 Bot
-                                </button>
-                                <button
-                                    onClick={() => onAddMockUser(5)}
-                                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm text-slate-300 font-medium transition-colors border border-white/5"
-                                >
-                                    + Add 5 Bots
-                                </button>
-                            </div>
+                    <div className="glass-card p-6 border-dashed border-slate-700">
+                        <h3 className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-4">測試工具 (Debug)</h3>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => onAddMockUser(1)}
+                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm text-slate-300 font-medium transition-colors border border-white/5"
+                            >
+                                + 加入 1 個機器人
+                            </button>
+                            <button
+                                onClick={() => onAddMockUser(5)}
+                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm text-slate-300 font-medium transition-colors border border-white/5"
+                            >
+                                + 加入 5 個機器人
+                            </button>
                         </div>
-                    )}
+                    </div>
 
                     {/* Last Winner Info */}
                     {gameState.winner && (

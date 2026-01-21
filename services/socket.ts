@@ -18,12 +18,15 @@ export const useGameSocket = () => {
 
     useEffect(() => {
         // Connect to the server
-        // In dev: proxy forwards /socket.io to localhost:3001
-        // In prod: connects to relative path
         const newSocket = io();
 
         newSocket.on('connect', () => {
             console.log('Connected to socket server');
+            // Auto-login if password saved
+            const savedPwd = sessionStorage.getItem('admin_password');
+            if (savedPwd) {
+                newSocket.emit('ADMIN_LOGIN', savedPwd);
+            }
         });
 
         newSocket.on('UPDATE_STATE', (newState: GameState) => {
@@ -37,6 +40,7 @@ export const useGameSocket = () => {
 
         newSocket.on('ADMIN_LOGIN_FAIL', () => {
             setLoginError(true);
+            sessionStorage.removeItem('admin_password'); // Clear invalid
         });
 
         setSocket(newSocket);
@@ -46,31 +50,49 @@ export const useGameSocket = () => {
         };
     }, []);
 
-    const emitJoin = (name: string, avatar: string) => {
+    const emitJoin = (userOrName: string | User, avatar?: string, eventId?: string) => {
         if (!socket) return;
-        const user: User = {
-            id: Math.random().toString(36).substr(2, 9), // Client-gen ID for now, could be server
-            name,
-            avatar,
-        };
-        socket.emit('JOIN', user);
+
+        let user: User;
+        // Handle legacy signature (name, avatar) vs new signature (userObj, null, eventId)
+        if (typeof userOrName === 'string') {
+            user = {
+                id: Math.random().toString(36).substr(2, 9),
+                name: userOrName,
+                avatar: avatar || '',
+            };
+        } else {
+            user = userOrName;
+        }
+
+        socket.emit('JOIN', { user, eventId });
     };
 
-    const emitReset = () => {
-        socket?.emit('RESET');
+    // For BigScreen/Admin to just listen to a specific event
+    const joinEventRoom = (eventId: string) => {
+        socket?.emit('REQUEST_STATE', eventId);
     };
 
-    const emitStart = () => {
-        socket?.emit('START_DRAW');
+    const emitReset = (eventId?: string) => {
+        socket?.emit('RESET', eventId);
+    };
+
+    const emitStart = (eventId?: string) => {
+        socket?.emit('START_DRAW', eventId);
     };
 
     const emitLogin = (password: string) => {
-        console.log('Emitting login:', password, !!socket);
-        if (!socket) {
-            console.error('Socket not connected');
-            return;
-        }
+        if (!socket) return;
         socket.emit('ADMIN_LOGIN', password);
+        // Optimistically save, or wait for success?
+        // Better wait for success, but for simplicity saving here or in SUCCESS handler
+        // The SUCCESS handler handles the "IsAdmin=true" state.
+        // We need to save it somewhere to restore it.
+        // Let's explicitly save it here so the connect handler can pick it up if we refresh immediately?
+        // Actually, saving in SUCCESS handler is safer.
+        // But the SUCCESS handler inside useEffect needs access to 'password' variable which isn't there.
+        // So we save to sessionStorage HERE.
+        sessionStorage.setItem('admin_password', password);
     };
 
     return {
@@ -78,6 +100,7 @@ export const useGameSocket = () => {
         emitJoin,
         emitReset,
         emitStart,
+        joinEventRoom,
         isAdmin,
         loginError,
         emitLogin,

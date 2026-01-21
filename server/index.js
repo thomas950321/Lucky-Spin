@@ -48,13 +48,60 @@ if (fs.existsSync(distPath)) {
 }
 
 // State
-let gameState = {
-    users: [],
-    status: 'WAITING',
-    winner: null,
-    winnersHistory: []
+const gameStates = new Map();
+
+// Helper to get or create state
+const getGameState = (eventId = 'default') => {
+    if (!gameStates.has(eventId)) {
+        gameStates.set(eventId, {
+            users: [],
+            status: 'WAITING',
+            winner: null,
+            winnersHistory: []
+        });
+    }
+    return gameStates.get(eventId);
 };
-let adminSocketId = null;
+
+// Initialize default state
+getGameState('default');
+
+// --- Event API Routes ---
+
+// Create Event
+app.post('/api/events', async (req, res) => {
+    const { title, background_url } = req.body;
+    try {
+        const { data, error } = await supabase
+            .from('events')
+            .insert({ title, background_url })
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json(data);
+    } catch (err) {
+        console.error('Error creating event:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get Event
+app.get('/api/events/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { data, error } = await supabase
+            .from('events')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+        res.json(data);
+    } catch (err) {
+        res.status(404).json({ error: 'Event not found' });
+    }
+});
 
 // --- Auth Routes ---
 
@@ -184,11 +231,10 @@ app.get('/api/user/me', async (req, res) => {
 
 // Socket Logic
 io.on('connection', (socket) => {
-    socket.emit('UPDATE_STATE', gameState);
 
     socket.on('ADMIN_LOGIN', (password) => {
         if (password === ADMIN_PASSWORD) {
-            adminSocketId = socket.id;
+            socket.data.isAdmin = true;
             socket.emit('ADMIN_LOGIN_SUCCESS');
         } else {
             socket.emit('ADMIN_LOGIN_FAIL');
@@ -196,47 +242,61 @@ io.on('connection', (socket) => {
     });
 
     socket.on('JOIN', (userData) => {
-        if (!userData || !userData.lineUserId) return;
-        console.log(`[Socket] Join request from ${userData.name} (${userData.lineUserId})`);
+        // userData can now include eventId
+        const eventId = userData.eventId || 'default';
+        const userPayload = userData.user || userData; // Handle both simplified and structured payload
+
+        if (!userPayload || !userPayload.lineUserId) return;
+
+        console.log(`[Socket] Join request from ${userPayload.name} (${userPayload.lineUserId}) to Event: ${eventId}`);
+
+        socket.join(eventId);
+        const gameState = getGameState(eventId);
 
         // Check if user already exists
-        const existingUserIndex = gameState.users.findIndex(u => u.lineUserId === userData.lineUserId);
+        const existingUserIndex = gameState.users.findIndex(u => u.lineUserId === userPayload.lineUserId);
 
         if (existingUserIndex !== -1) {
             // Update existing user's socket ID (handle refresh/reconnect)
-            // But don't change their position in the array or other stats if we tracked them
-            console.log(`[Socket] User ${userData.name} re-connected/updated.`);
+            console.log(`[Socket] User ${userPayload.name} re-connected/updated.`);
             gameState.users[existingUserIndex].id = socket.id;
-            // Optionally update avatar/name if changed
-            gameState.users[existingUserIndex].name = userData.name;
-            gameState.users[existingUserIndex].avatar = userData.avatar;
+            gameState.users[existingUserIndex].name = userPayload.name;
+            gameState.users[existingUserIndex].avatar = userPayload.avatar;
         } else {
             // New User
             const newUser = {
                 id: socket.id,
-                lineUserId: userData.lineUserId,
-                name: userData.name,
-                avatar: userData.avatar
+                lineUserId: userPayload.lineUserId,
+                name: userPayload.name,
+                avatar: userPayload.avatar
             };
             gameState.users.push(newUser);
-            console.log(`[Socket] New user joined: ${userData.name}`);
+            console.log(`[Socket] New user joined: ${userPayload.name}`);
         }
 
-        io.emit('UPDATE_STATE', gameState);
+        io.to(eventId).emit('UPDATE_STATE', gameState);
+        // Also send state to the individual socket just in case
+        socket.emit('UPDATE_STATE', gameState);
     });
 
-    // Initial State
-    gameState.winnersHistory = gameState.winnersHistory || [];
+    // Request State (Explicit Sync)
+    socket.on('REQUEST_STATE', (eventId = 'default') => {
+        socket.join(eventId);
+        socket.emit('UPDATE_STATE', getGameState(eventId));
+    });
 
-    socket.on('START_DRAW', () => {
-        // Allow anyone to start draw (BigScreen or Admin)
-        // if (socket.id !== adminSocketId) return; 
+    socket.on('START_DRAW', (eventId = 'default') => {
+        // if (!socket.data.isAdmin) return; // Strict Admin Check (Optional)
+
+        const gameState = getGameState(eventId);
+        if (gameState.status === 'ROLLING') return; // Prevent double start
+
         if (gameState.users.length > 0) {
             // Pick winner immediately so wheel knows where to land
             const winnerIndex = Math.floor(Math.random() * gameState.users.length);
             gameState.winner = gameState.users[winnerIndex];
             gameState.status = 'ROLLING'; // Start Animation
-            io.emit('UPDATE_STATE', gameState);
+            io.to(eventId).emit('UPDATE_STATE', gameState);
 
             // Wait for Fixed Frontend Animation Time (8s) + Buffer
             setTimeout(() => {
@@ -245,26 +305,27 @@ io.on('connection', (socket) => {
                 gameState.winnersHistory.push(gameState.winner);
 
                 gameState.status = 'WINNER'; // Show Result
-                io.emit('UPDATE_STATE', gameState);
+                io.to(eventId).emit('UPDATE_STATE', gameState);
             }, 8500);
         }
     });
 
-    socket.on('RESET', () => {
-        console.log(`[Server] RESET requested by ${socket.id}. Current Admin: ${adminSocketId}`);
-        if (socket.id !== adminSocketId) {
+    socket.on('RESET', (eventId = 'default') => {
+        console.log(`[Server] RESET requested by ${socket.id} for Event: ${eventId}`);
+        if (!socket.data.isAdmin) {
             console.warn('[Server] RESET denied: Not Admin');
-            // return; // TEMPORARILY COMMENTED OUT FOR DEBUGGING/FIXING
+            // return; 
         }
+        const gameState = getGameState(eventId);
         gameState.status = 'WAITING';
         gameState.winner = null;
         gameState.users = [];
         gameState.winnersHistory = [];
-        io.emit('UPDATE_STATE', gameState);
+        io.to(eventId).emit('UPDATE_STATE', gameState);
     });
 
     socket.on('disconnect', () => {
-        if (socket.id === adminSocketId) adminSocketId = null;
+        // Cleanup? Not strictly necessary for simple persistent array
     });
 });
 

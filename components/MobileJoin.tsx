@@ -1,26 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { User, GameState } from '../types';
-import { LuckyWheel } from './LuckyWheel';
+import { useParams } from 'react-router-dom';
+import { useGameSocket } from '../services/socket';
 import { UserPlus, CheckCircle, User as UserIcon } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { io, Socket } from 'socket.io-client';
 
-interface MobileJoinProps {
-  onJoin: (name: string, avatar: string) => void;
-  gameState: GameState;
-  socket: Socket | null;
-}
-
-export const MobileJoin: React.FC<MobileJoinProps> = ({ onJoin, gameState, socket }) => {
+export const MobileJoin: React.FC = () => {
+  const { id: eventId } = useParams();
+  const { emitJoin, socket } = useGameSocket();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [customName, setCustomName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [hasJoined, setHasJoined] = useState(false);
+  const [eventConfig, setEventConfig] = useState<{ title?: string, background_url?: string } | null>(null);
 
   useEffect(() => {
     checkAuth();
-  }, []);
+    if (eventId) {
+      fetch(`/api/events/${eventId}`)
+        .then(res => res.json())
+        .then(data => setEventConfig(data))
+        .catch(console.error);
+    }
+  }, [eventId]);
 
   const checkAuth = async () => {
     try {
@@ -48,11 +50,14 @@ export const MobileJoin: React.FC<MobileJoinProps> = ({ onJoin, gameState, socke
         alert("請輸入名稱");
         return;
       }
-      socket.emit('JOIN', {
-        name: customName.trim(), // Use custom name
+
+      emitJoin({
+        name: customName.trim(),
         avatar: currentUser.avatar,
-        lineUserId: currentUser.lineUserId
-      });
+        lineUserId: currentUser.lineUserId,
+        id: currentUser.lineUserId // Use lineUserId as ID or let server/socket generate? socket.ts handles it
+      } as any, undefined, eventId || 'default');
+
       setHasJoined(true);
 
       confetti({
@@ -64,11 +69,18 @@ export const MobileJoin: React.FC<MobileJoinProps> = ({ onJoin, gameState, socke
     }
   };
 
+  // Inherit background if configured
+  const containerStyle = eventConfig?.background_url ? {
+    backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.9)), url('${eventConfig.background_url}')`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center'
+  } : {};
+
   if (isLoading) return <div className="text-white text-center mt-20">Loading...</div>;
 
   if (hasJoined) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center" style={containerStyle}>
         <div className="glass-card p-8 w-full max-w-sm animate-in zoom-in duration-300">
           <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
             <CheckCircle className="text-green-500" size={40} />
@@ -88,10 +100,10 @@ export const MobileJoin: React.FC<MobileJoinProps> = ({ onJoin, gameState, socke
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center" style={containerStyle}>
       <div className="w-full max-w-sm mb-8">
         <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-violet-400 mb-2 glow-text">
-          RaffleRoyale
+          {eventConfig?.title || 'RaffleRoyale'}
         </h1>
         <p className="text-slate-400">大螢幕互動抽獎系統</p>
       </div>

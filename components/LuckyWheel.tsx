@@ -40,6 +40,8 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
         }).catch(e => console.error("Audio unlock failed: User interaction required to play audio.", e));
     };
 
+    const spinTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     useEffect(() => {
         spinAudio.current.loop = true;
         spinAudio.current.volume = 1.0; // Max volume for clearer ticking
@@ -55,9 +57,18 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
         window.addEventListener('click', unlockHandler);
         window.addEventListener('touchstart', unlockHandler);
 
+        // Cleanup on unmount (FIX for Strict Mode double-spin/audio)
         return () => {
             window.removeEventListener('click', unlockHandler);
             window.removeEventListener('touchstart', unlockHandler);
+
+            if (spinTimeoutRef.current) {
+                clearTimeout(spinTimeoutRef.current);
+            }
+            spinAudio.current.pause();
+            spinAudio.current.currentTime = 0;
+            winAudio.current.pause();
+            winAudio.current.currentTime = 0;
         };
     }, []);
 
@@ -71,24 +82,26 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
         '#004d25', // Forest Green
     ];
 
+    const spinningRef = useRef(false);
+    const lastWinnerIdRef = useRef<string | null>(null);
+
     useEffect(() => {
         // Trigger spin ONLY when status is ROLLING (Start of draw)
-        // We do NOT spin on WINNER status to prevent double-spinning or auto-spin on refresh
-        if (gameState.status === 'ROLLING' && gameState.winner && !isSpinning) {
+        if (gameState.status === 'ROLLING' && gameState.winner) {
 
+            // Deduplication Check
+            if (spinningRef.current) return;
+            if (lastWinnerIdRef.current === (gameState.winner.lineUserId || gameState.winner.id)) return;
 
             const winnerIndex = users.findIndex(u => {
-                // If both have lineUserId, strict match on that
                 if (u.lineUserId && gameState.winner?.lineUserId) {
                     return u.lineUserId === gameState.winner.lineUserId;
                 }
-                // Fallback to socket ID only if lineUserId is missing
                 return u.id === gameState.winner?.id;
             });
 
-
-
             if (winnerIndex !== -1) {
+                lastWinnerIdRef.current = gameState.winner.lineUserId || gameState.winner.id;
                 spinToWinner(winnerIndex);
             } else {
                 console.error('[LuckyWheel] Winner not found in users array!');
@@ -96,11 +109,15 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
         } else if (gameState.status === 'WAITING') {
             setRotation(0);
             setIsSpinning(false);
+            spinningRef.current = false;
+            lastWinnerIdRef.current = null;
         }
     }, [gameState.status, gameState.winner, users]);
 
     const spinToWinner = (winnerIndex: number) => {
         setIsSpinning(true);
+        spinningRef.current = true;
+
         const segmentAngle = 360 / users.length;
         const spinCount = 8; // More spins for dramatic effect
         const extraSpins = 360 * spinCount;
@@ -124,8 +141,9 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
         spinAudio.current.currentTime = 0;
         spinAudio.current.play().catch(e => console.warn("Audio play failed (user interaction needed first):", e));
 
-        setTimeout(() => {
+        spinTimeoutRef.current = setTimeout(() => {
             setIsSpinning(false);
+            spinningRef.current = false;
             onSpinComplete();
 
             // Stop Spin Sound
@@ -222,10 +240,22 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
                                         <div className="relative p-1 rounded-full bg-gradient-to-tr from-[#bf953f] to-[#fcf6ba] shadow-lg">
                                             <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-black/20 flex items-center justify-center text-3xl sm:text-4xl backdrop-blur-sm overflow-hidden">
                                                 {user.avatar.startsWith('http') ? (
-                                                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                                                    <img
+                                                        src={user.avatar}
+                                                        alt={user.name}
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            e.currentTarget.style.display = 'none';
+                                                            e.currentTarget.parentElement?.querySelector('.avatar-fallback')?.classList.remove('hidden');
+                                                        }}
+                                                    />
                                                 ) : (
-                                                    user.avatar
+                                                    <span className="text-xl">{user.avatar}</span>
                                                 )}
+                                                {/* Fallback for broken images */}
+                                                <div className="avatar-fallback hidden w-full h-full flex items-center justify-center bg-slate-800 text-white font-bold text-lg">
+                                                    {user.name.charAt(0).toUpperCase()}
+                                                </div>
                                             </div>
                                         </div>
 
@@ -275,11 +305,26 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
                             <div className="relative bg-gradient-to-b from-[#1a1a1a] to-black p-1 rounded-full border-4 border-[#bf953f] shadow-[0_0_50px_rgba(255,215,0,0.5)]">
                                 <div className="bg-[radial-gradient(circle,transparent_20%,#000_120%)] p-8 sm:p-12 rounded-full flex flex-col items-center gap-2 border border-[#fcf6ba]/20">
                                     <span className="text-[#bf953f] uppercase tracking-[0.3em] text-xs font-bold">Jackpot Winner</span>
-                                    <div className="text-8xl animate-[bounce_1s_infinite] filter drop-shadow-[0_0_15px_rgba(255,215,0,0.5)] flex justify-center">
+                                    <div className="text-8xl animate-[bounce_1s_infinite] filter drop-shadow-[0_0_15px_rgba(255,215,0,0.5)] flex justify-center w-32 h-32 rounded-full overflow-hidden bg-slate-800 border-4 border-[#bf953f] relative">
                                         {gameState.winner.avatar.startsWith('http') ? (
-                                            <img src={gameState.winner.avatar} className="w-32 h-32 rounded-full object-cover border-4 border-[#bf953f]" alt="Winner" />
+                                            <>
+                                                <img
+                                                    src={gameState.winner.avatar}
+                                                    className="w-full h-full object-cover"
+                                                    alt={gameState.winner.name}
+                                                    onError={(e) => {
+                                                        e.currentTarget.style.display = 'none';
+                                                        e.currentTarget.parentElement?.querySelector('.winner-fallback')?.classList.remove('hidden');
+                                                    }}
+                                                />
+                                                <div className="winner-fallback hidden absolute inset-0 flex items-center justify-center bg-slate-800 text-[#bf953f] font-bold text-5xl">
+                                                    {gameState.winner.name.charAt(0).toUpperCase()}
+                                                </div>
+                                            </>
                                         ) : (
-                                            gameState.winner.avatar
+                                            <div className="w-full h-full flex items-center justify-center bg-slate-800 text-[#bf953f] font-bold text-5xl">
+                                                {gameState.winner.avatar}
+                                            </div>
                                         )}
                                     </div>
                                     <h2 className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#fcf6ba] to-[#bf953f] filter drop-shadow-lg font-serif mt-2">
