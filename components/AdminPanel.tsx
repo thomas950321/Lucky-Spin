@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameSocket } from '../services/socket';
-import { Play, RotateCcw, Users, Trophy, PlusCircle, ArrowLeft, Download } from 'lucide-react';
+import { Play, RotateCcw, Users, Trophy, PlusCircle, ArrowLeft, Download, Trash2, Archive } from 'lucide-react';
 import { AdminLogin } from './AdminLogin';
 
 export const AdminPanel: React.FC = () => {
     const { id: eventId } = useParams();
     const navigate = useNavigate();
-    const { gameState, emitStart, emitReset, joinEventRoom, emitJoin, socket, isAdmin, emitLogin, loginError } = useGameSocket();
+    const { gameState, emitStart, emitReset, joinEventRoom, emitJoin, socket, isAdmin, emitLogin, loginError, emitClearHistory, emitNewRound } = useGameSocket();
     const [eventConfig, setEventConfig] = useState<{ title?: string, background_url?: string } | null>(null);
 
     useEffect(() => {
@@ -54,27 +54,58 @@ export const AdminPanel: React.FC = () => {
         }
     };
 
+    const onClearHistory = () => {
+        if (confirm("確定要清除中獎紀錄嗎？這不會清除目前的參加者以及與目前的狀態。")) {
+            emitClearHistory(eventId || 'default');
+        }
+    };
+
+    const onNewRound = () => {
+        if (confirm("確定要開啟新一輪嗎？\n\n- 目前的參加者會被【保留】。\n- 目前的中獎紀錄會被【封存】。\n- 畫面會被【清空】。")) {
+            emitNewRound(eventId || 'default');
+        }
+    };
+
     const exportToCSV = () => {
-        if (!gameState.winnersHistory || gameState.winnersHistory.length === 0) {
+        const hasHistory = gameState.winnersHistory?.length > 0 || gameState.pastRounds?.length > 0;
+
+        if (!hasHistory) {
             alert("目前沒有中獎名單可匯出");
             return;
         }
 
-        const headers = ["順序 (Rank)", "名稱 (Name)", "LINE ID / ID", "頭像網址 (Avatar URL)"];
+        const headers = ["回合 (Round)", "順序 (Rank)", "名稱 (Name)", "LINE ID / ID", "頭像網址 (Avatar URL)"];
 
         // Add BOM for Excel UTF-8 compatibility
         let csvContent = "\uFEFF";
         csvContent += headers.join(",") + "\n";
 
-        [...gameState.winnersHistory].reverse().forEach((winner, index) => {
-            const row = [
-                gameState.winnersHistory.length - index,
-                `"${winner.name.replace(/"/g, '""')}"`, // Escape quotes
-                `"${winner.lineUserId || winner.id}"`,
-                `"${winner.avatar}"`
-            ];
-            csvContent += row.join(",") + "\n";
-        });
+        // Helper to add rows
+        const addRoundRows = (roundName: string, winners: any[]) => {
+            [...winners].reverse().forEach((winner, index) => {
+                const row = [
+                    roundName,
+                    winners.length - index,
+                    `"${winner.name.replace(/"/g, '""')}"`, // Escape quotes
+                    `"${winner.lineUserId || winner.id}"`,
+                    `"${winner.avatar}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+        };
+
+        // 1. Past Rounds
+        if (gameState.pastRounds) {
+            gameState.pastRounds.forEach((round, index) => {
+                addRoundRows(`Round ${index + 1}`, round.winners);
+            });
+        }
+
+        // 2. Current Round
+        if (gameState.winnersHistory && gameState.winnersHistory.length > 0) {
+            const currentRoundNum = (gameState.pastRounds?.length || 0) + 1;
+            addRoundRows(`Round ${currentRoundNum} (Current)`, gameState.winnersHistory);
+        }
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -92,52 +123,92 @@ export const AdminPanel: React.FC = () => {
             {/* Background Image is inherited from body */}
 
             {/* Winner History Sidebar */}
-            {gameState.winnersHistory && gameState.winnersHistory.length > 0 && (
+            {(gameState.winnersHistory?.length > 0 || gameState.pastRounds?.length > 0) && (
                 <div className="absolute left-6 top-1/2 -translate-y-1/2 w-64 max-h-[70vh] glass-card p-4 overflow-hidden flex flex-col z-10 border-purple-500/20 animate-in slide-in-from-left duration-500">
                     <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-2">
                         <h3 className="text-purple-300 uppercase tracking-widest text-xs font-bold flex items-center gap-2">
                             <Trophy size={14} />
                             名人堂
                         </h3>
-                        <button
-                            onClick={exportToCSV}
-                            className="text-purple-300 hover:text-white transition-colors p-1 rounded hover:bg-white/10"
-                            title="匯出 Excel (CSV)"
-                        >
-                            <Download size={14} />
-                        </button>
+                        <div className="flex gap-1">
+                            <button
+                                onClick={onClearHistory}
+                                className="text-purple-300 hover:text-red-400 transition-colors p-1 rounded hover:bg-white/10"
+                                title="清除紀錄 (Clear History)"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                            <button
+                                onClick={exportToCSV}
+                                className="text-purple-300 hover:text-white transition-colors p-1 rounded hover:bg-white/10"
+                                title="匯出 Excel (CSV)"
+                            >
+                                <Download size={14} />
+                            </button>
+                        </div>
                     </div>
                     <div className="overflow-y-auto custom-scrollbar flex-1 space-y-2 pr-1">
-                        {[...gameState.winnersHistory].reverse().map((winner, index) => (
-                            <div key={index} className="bg-slate-900/60 p-3 rounded-lg flex items-center gap-3 border border-white/5 group hover:border-purple-500/30 transition-colors">
-                                <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-purple-500/20 shadow-lg relative">
-                                    {winner.avatar.startsWith('http') ? (
-                                        <>
-                                            <img
-                                                src={winner.avatar}
-                                                alt={winner.name}
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    e.currentTarget.style.display = 'none';
-                                                    e.currentTarget.parentElement?.querySelector('.sidebar-fallback')?.classList.remove('hidden');
-                                                }}
-                                            />
-                                            <div className="sidebar-fallback hidden w-full h-full flex items-center justify-center bg-violet-600 text-white font-bold text-xs">
-                                                {winner.name.charAt(0)}
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <span className="text-lg">{winner.avatar}</span>
-                                    )}
+                        {/* Past Rounds */}
+                        {gameState.pastRounds?.map((round, rIndex) => (
+                            <div key={round.id} className="space-y-2 mb-4 opacity-70 hover:opacity-100 transition-opacity">
+                                <div className="text-xs text-white/40 uppercase tracking-widest font-bold border-b border-white/5 pb-1 sticky top-0 bg-[#0f172a] z-10">
+                                    Round #{rIndex + 1}
                                 </div>
-                                <div>
-                                    <div className="text-purple-100 font-bold text-sm truncate max-w-[120px]">{winner.name}</div>
-                                    <div className="text-purple-500/50 text-[10px] uppercase tracking-wider">
-                                        第 {gameState.winnersHistory.length - index} 位
+                                {[...round.winners].reverse().map((winner, index) => (
+                                    <div key={`${round.id}-${index}`} className="bg-slate-900/40 p-2 rounded-lg flex items-center gap-3 border border-white/5">
+                                        <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-white/10 relative">
+                                            {winner.avatar.startsWith('http') ? (
+                                                <img src={winner.avatar} alt={winner.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-xs">{winner.avatar}</span>
+                                            )}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="text-slate-300 font-bold text-xs truncate max-w-[120px]">{winner.name}</div>
+                                        </div>
                                     </div>
-                                </div>
+                                ))}
                             </div>
                         ))}
+
+                        {/* Current Round */}
+                        {gameState.winnersHistory?.length > 0 && (
+                            <div className="space-y-2">
+                                <div className="text-xs text-purple-400 uppercase tracking-widest font-bold border-b border-purple-500/20 pb-1 sticky top-0 bg-[#0f172a] z-10">
+                                    Current Round
+                                </div>
+                                {[...gameState.winnersHistory].reverse().map((winner, index) => (
+                                    <div key={`current-${index}`} className="bg-slate-900/60 p-3 rounded-lg flex items-center gap-3 border border-white/5 group hover:border-purple-500/30 transition-colors">
+                                        <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-purple-500/20 shadow-lg relative">
+                                            {winner.avatar.startsWith('http') ? (
+                                                <>
+                                                    <img
+                                                        src={winner.avatar}
+                                                        alt={winner.name}
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            e.currentTarget.style.display = 'none';
+                                                            e.currentTarget.parentElement?.querySelector('.sidebar-fallback')?.classList.remove('hidden');
+                                                        }}
+                                                    />
+                                                    <div className="sidebar-fallback hidden w-full h-full flex items-center justify-center bg-violet-600 text-white font-bold text-xs">
+                                                        {winner.name.charAt(0)}
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <span className="text-lg">{winner.avatar}</span>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <div className="text-purple-100 font-bold text-sm truncate max-w-[120px]">{winner.name}</div>
+                                            <div className="text-purple-500/50 text-[10px] uppercase tracking-wider">
+                                                第 {gameState.winnersHistory.length - index} 位
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -188,7 +259,7 @@ export const AdminPanel: React.FC = () => {
                     </div>
 
                     {/* Controls */}
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid md:grid-cols-3 gap-6">
                         <button
                             onClick={() => emitStart(eventId || 'default')}
                             disabled={gameState.users.length === 0 || gameState.status === 'ROLLING'}
@@ -199,6 +270,18 @@ export const AdminPanel: React.FC = () => {
                                     <Play className="text-white fill-current ml-1" size={40} />
                                 </div>
                                 <span className="text-3xl font-bold text-white group-hover:text-green-400 transition-colors">開始抽獎</span>
+                            </div>
+                        </button>
+
+                        <button
+                            onClick={onNewRound}
+                            className="group relative glass-card p-8 transition-all duration-300 hover:border-blue-400/50 hover:bg-blue-500/5 hover:-translate-y-1"
+                        >
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 group-hover:shadow-blue-500/40 transition-all duration-300">
+                                    <Archive className="text-white" size={36} />
+                                </div>
+                                <span className="text-3xl font-bold text-white group-hover:text-blue-400 transition-colors">開啟新一輪</span>
                             </div>
                         </button>
 

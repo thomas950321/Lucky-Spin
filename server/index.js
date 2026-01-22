@@ -57,7 +57,8 @@ const getGameState = (eventId = 'default') => {
             users: [],
             status: 'WAITING',
             winner: null,
-            winnersHistory: []
+            winnersHistory: [],
+            pastRounds: []
         });
     }
     return gameStates.get(eventId);
@@ -321,6 +322,44 @@ io.on('connection', (socket) => {
         gameState.winner = null;
         gameState.users = [];
         gameState.winnersHistory = [];
+        io.to(eventId).emit('UPDATE_STATE', gameState);
+    });
+
+    socket.on('CLEAR_HISTORY', (eventId = 'default') => {
+        console.log(`[Server] CLEAR_HISTORY requested by ${socket.id} for Event: ${eventId}`);
+        if (!socket.data.isAdmin) {
+            console.warn('[Server] CLEAR_HISTORY denied: Not Admin');
+            return;
+        }
+        const gameState = getGameState(eventId);
+        // Clear ALL history (both current and past)
+        gameState.winnersHistory = [];
+        gameState.pastRounds = [];
+        io.to(eventId).emit('UPDATE_STATE', gameState);
+    });
+
+    socket.on('NEW_ROUND', (eventId = 'default') => {
+        console.log(`[Server] NEW_ROUND requested by ${socket.id} for Event: ${eventId}`);
+        if (!socket.data.isAdmin) {
+            console.warn('[Server] NEW_ROUND denied: Not Admin');
+            return;
+        }
+        const gameState = getGameState(eventId);
+
+        // Archive current round
+        if (gameState.winnersHistory && gameState.winnersHistory.length > 0) {
+            gameState.pastRounds.push({
+                id: Date.now(), // Simple ID based on timestamp
+                timestamp: new Date().toISOString(),
+                winners: [...gameState.winnersHistory]
+            });
+        }
+
+        // Reset for new round (Keep users)
+        gameState.status = 'WAITING';
+        gameState.winner = null;
+        gameState.winnersHistory = [];
+
         io.to(eventId).emit('UPDATE_STATE', gameState);
     });
 

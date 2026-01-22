@@ -12,6 +12,11 @@ export interface GameState {
   status: GameStatus;
   winner: User | null;
   winnersHistory: User[];
+  pastRounds?: Array<{
+    id: number;
+    timestamp: string;
+    winners: User[];
+  }>;
 }
 
 export type EventType =

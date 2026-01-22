@@ -104,6 +104,8 @@ export const useGameSocket = () => {
         isAdmin,
         loginError,
         emitLogin,
+        emitClearHistory: (eventId?: string) => socket?.emit('CLEAR_HISTORY', eventId),
+        emitNewRound: (eventId?: string) => socket?.emit('NEW_ROUND', eventId),
         socket
     };
 };
