@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Image as ImageIcon, Link as LinkIcon, Copy, ArrowLeft, Settings, Check } from 'lucide-react';
+import { Calendar, Image as ImageIcon, Link as LinkIcon, Copy, ArrowLeft, Settings, Check, Trash2, ExternalLink } from 'lucide-react';
 import { useGameSocket } from '../services/socket';
 import { AdminLogin } from './AdminLogin';
 
@@ -15,6 +15,42 @@ export const EventCreator: React.FC = () => {
     const [error, setError] = useState('');
     // Track which button shows "Copied!" state
     const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({});
+    const [eventsList, setEventsList] = useState<any[]>([]);
+
+    const fetchEvents = async () => {
+        try {
+            const res = await fetch('/api/events');
+            if (res.ok) {
+                const data = await res.json();
+                setEventsList(Array.isArray(data) ? data : []);
+            }
+        } catch (err) {
+            console.error('Failed to fetch events', err);
+        }
+    };
+
+    React.useEffect(() => {
+        fetchEvents();
+    }, []);
+
+    const handleDelete = async (id: string, title: string) => {
+        if (!confirm(`確定要刪除活動 "${title}" 嗎？\n此動作無法復原！`)) return;
+
+        const check = prompt('請輸入 "DELETE" 確認刪除：');
+        if (check !== 'DELETE') return;
+
+        try {
+            const res = await fetch(`/api/events/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                alert('刪除成功');
+                fetchEvents(); // Refresh list
+            } else {
+                alert('刪除失敗');
+            }
+        } catch (e) {
+            alert('發生錯誤');
+        }
+    };
 
     if (!isAdmin) {
         return <AdminLogin onLogin={emitLogin} error={loginError} />;
@@ -36,6 +72,7 @@ export const EventCreator: React.FC = () => {
             if (!res.ok) throw new Error(data.error || 'Failed to create event');
 
             setCreatedEvent(data);
+            fetchEvents(); // Refresh list
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -243,6 +280,81 @@ export const EventCreator: React.FC = () => {
                         </button>
                     </div>
                 )}
+            </div>
+
+            {/* Event List Section */}
+            <div className="absolute top-24 right-6 w-80 hidden xl:block">
+                <div className="glass-card p-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <Settings size={18} className="text-purple-400" />
+                        已建立的活動
+                    </h3>
+                    <div className="space-y-3">
+                        {eventsList.length === 0 ? (
+                            <p className="text-slate-500 text-sm text-center py-4">尚無活動</p>
+                        ) : (
+                            eventsList.map(event => (
+                                <div key={event.id} className="bg-slate-900/50 p-3 rounded-xl border border-white/5 hover:border-purple-500/30 transition-all group">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                            <h4 className="font-bold text-white text-sm truncate max-w-[150px]" title={event.title}>{event.title}</h4>
+                                            <p className="text-xs text-slate-500 font-mono mt-0.5">{event.slug || 'Default UUID'}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleDelete(event.id, event.title)}
+                                            className="text-slate-600 hover:text-red-400 transition-colors p-1"
+                                            title="刪除"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => window.open(`/#/admin/event/${event.slug || event.id}`, '_blank')}
+                                            className="flex-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                                        >
+                                            <Settings size={12} />
+                                            管理
+                                        </button>
+                                        <button
+                                            onClick={() => window.open(`/#/event/${event.slug || event.id}`, '_blank')}
+                                            className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                                        >
+                                            <ExternalLink size={12} />
+                                            開啟
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Mobile/Tablet List (Below Form) */}
+            <div className="mt-8 xl:hidden max-w-md w-full">
+                <div className="glass-card p-6">
+                    <h3 className="text-lg font-bold text-white mb-4">已建立的活動</h3>
+                    <div className="space-y-3">
+                        {eventsList.map(event => (
+                            <div key={event.id} className="bg-slate-900/50 p-3 rounded-xl border border-white/5 flex items-center justify-between">
+                                <div className="min-w-0">
+                                    <h4 className="font-bold text-white text-sm truncate" title={event.title}>{event.title}</h4>
+                                    <div className="text-xs text-slate-500 font-mono mt-0.5 flex gap-2">
+                                        <span>{event.slug || 'UUID'}</span>
+                                        <a href={`/#/admin/event/${event.slug || event.id}`} className="text-purple-400 hover:underline">管理</a>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => handleDelete(event.id, event.title)}
+                                    className="text-slate-600 hover:text-red-400 transition-colors p-2"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );

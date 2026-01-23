@@ -66,6 +66,35 @@ export const AdminPanel: React.FC = () => {
         }
     };
 
+    const onDeleteEvent = async () => {
+        if (!eventId) return;
+
+        // First Confirmation
+        if (!confirm(`【警告】您確定要刪除活動 "${eventConfig?.title || eventId}" 嗎？\n\n此動作刪除後無法復原！\n網址 ID 將會被釋出。`)) {
+            return;
+        }
+
+        // Second Confirmation (Double Check)
+        const checkInput = prompt(`請輸入 "DELETE" 以確認刪除此活動：`);
+        if (checkInput !== 'DELETE') {
+            alert('刪除取消。');
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/events/${eventId}`, { method: 'DELETE' });
+            if (res.ok) {
+                alert('活動已刪除！');
+                navigate('/admin/events');
+            } else {
+                throw new Error('刪除失敗');
+            }
+        } catch (err) {
+            alert('刪除發生錯誤，請稍後再試。');
+            console.error(err);
+        }
+    };
+
     const exportToCSV = () => {
         const hasHistory = gameState.winnersHistory?.length > 0 || gameState.pastRounds?.length > 0;
 
@@ -236,6 +265,17 @@ export const AdminPanel: React.FC = () => {
                                 >
                                     <ArrowLeft size={18} />
                                     返回預設房
+                                </button>
+                            )}
+
+                            {/* Delete Button (Only for specific events) */}
+                            {eventId && (
+                                <button
+                                    onClick={onDeleteEvent}
+                                    className="px-4 py-2 bg-red-900/50 hover:bg-red-600 rounded-lg text-red-200 hover:text-white flex items-center gap-2 transition-colors border border-red-500/20"
+                                    title="刪除此活動 (Delete Event)"
+                                >
+                                    <Trash2 size={18} />
                                 </button>
                             )}
                         </div>

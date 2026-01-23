@@ -113,6 +113,51 @@ app.get('/api/events/:id', async (req, res) => {
     }
 });
 
+// Delete Event
+app.delete('/api/events/:id', async (req, res) => {
+    const { id } = req.params;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+    try {
+        let query = supabase.from('events').delete();
+
+        if (isUuid) {
+            query = query.eq('id', id);
+        } else {
+            query = query.eq('slug', id);
+        }
+
+        const { error } = await query;
+        if (error) throw error;
+
+        // Also clean up server-side state if exists
+        if (gameStates.has(id)) {
+            gameStates.delete(id);
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Error deleting event:', err);
+        res.status(500).json({ error: 'Failed to delete event' });
+    }
+});
+
+// List All Events
+app.get('/api/events', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('events')
+            .select('id, title, slug, created_at, background_url')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        res.json(data);
+    } catch (err) {
+        console.error('Error listing events:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // --- Auth Routes ---
 
 // 1. Redirect to LINE Login

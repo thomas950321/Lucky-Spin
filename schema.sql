@@ -45,3 +45,8 @@ drop policy if exists "Enable insert for all users" on public.events;
 create policy "Enable insert for all users"
 on public.events for insert
 with check (true);
+
+drop policy if exists "Enable delete for all users" on public.events;
+create policy "Enable delete for all users"
+on public.events for delete
+using (true);
