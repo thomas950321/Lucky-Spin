@@ -1,4 +1,4 @@
-# 🎰 Lucky Spin - Raffle Royale (豪華抽獎系統)
+# Lucky Spin - Raffle Royale (豪華抽獎系統)
 
 這是一個專為活動、尾牙、派對設計的**高質感即時抽獎系統**。
 採用 **WebSocket (Socket.io)** 技術確保零延遲互動，並整合 **LINE Login** 與 **Supabase** 資料庫，提供流暢且穩定的使用者體驗。

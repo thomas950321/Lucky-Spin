@@ -28,6 +28,7 @@ create table if not exists public.events (
   id uuid default gen_random_uuid() primary key,
   title text not null,
   background_url text,
+  slug text unique,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

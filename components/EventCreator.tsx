@@ -8,6 +8,7 @@ export const EventCreator: React.FC = () => {
     const navigate = useNavigate();
     const { isAdmin, emitLogin, loginError, socket } = useGameSocket();
     const [title, setTitle] = useState('');
+    const [slug, setSlug] = useState('');
     const [bgUrl, setBgUrl] = useState('');
     const [createdEvent, setCreatedEvent] = useState<any>(null);
     const [loading, setLoading] = useState(false);
@@ -28,7 +29,7 @@ export const EventCreator: React.FC = () => {
             const res = await fetch('/api/events', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, background_url: bgUrl })
+                body: JSON.stringify({ title, background_url: bgUrl, slug: slug || undefined })
             });
 
             const data = await res.json();
@@ -42,9 +43,10 @@ export const EventCreator: React.FC = () => {
         }
     };
 
-    const eventLink = createdEvent ? `${window.location.origin}/#/event/${createdEvent.id}` : '';
-    const joinLink = createdEvent ? `${window.location.origin}/#/event/${createdEvent.id}/join` : '';
-    const adminLink = createdEvent ? `${window.location.origin}/#/admin/event/${createdEvent.id}` : '';
+    const eventIdentifier = createdEvent ? (createdEvent.slug || createdEvent.id) : '';
+    const eventLink = createdEvent ? `${window.location.origin}/#/event/${eventIdentifier}` : '';
+    const joinLink = createdEvent ? `${window.location.origin}/#/event/${eventIdentifier}/join` : '';
+    const adminLink = createdEvent ? `${window.location.origin}/#/admin/event/${eventIdentifier}` : '';
 
     const copyToClipboard = async (text: string, key: string) => {
         try {
@@ -109,6 +111,23 @@ export const EventCreator: React.FC = () => {
                                 />
                                 <Calendar className="absolute left-3 top-3.5 text-slate-500" size={18} />
                             </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm text-slate-400 uppercase tracking-wider font-bold">自訂活動網址 ID (Custom URL ID)</label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={slug}
+                                    onChange={e => setSlug(e.target.value)}
+                                    placeholder="例如：my-year-end-party"
+                                    className="w-full bg-slate-900/50 border border-white/10 rounded-xl p-3 pl-10 text-white placeholder:text-slate-600 focus:border-purple-500/50 outline-none transition-all"
+                                    pattern="[a-zA-Z0-9-]+"
+                                    title="只允許英文、數字和連字號"
+                                />
+                                <LinkIcon className="absolute left-3 top-3.5 text-slate-500" size={18} />
+                            </div>
+                            <p className="text-xs text-slate-500">選填。若留空將自動生成亂數代碼。</p>
                         </div>
 
                         <div className="space-y-2">
@@ -215,6 +234,7 @@ export const EventCreator: React.FC = () => {
                             onClick={() => {
                                 setCreatedEvent(null);
                                 setTitle('');
+                                setSlug('');
                                 setBgUrl('');
                             }}
                             className="w-full py-3 border border-white/10 rounded-xl font-bold text-slate-300 hover:bg-white/5 transition-colors"

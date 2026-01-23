@@ -71,11 +71,11 @@ getGameState('default');
 
 // Create Event
 app.post('/api/events', async (req, res) => {
-    const { title, background_url } = req.body;
+    const { title, background_url, slug } = req.body;
     try {
         const { data, error } = await supabase
             .from('events')
-            .insert({ title, background_url })
+            .insert({ title, background_url, slug: slug || null })
             .select()
             .single();
 
@@ -83,6 +83,9 @@ app.post('/api/events', async (req, res) => {
         res.json(data);
     } catch (err) {
         console.error('Error creating event:', err);
+        if (err.code === '23505') { // Postgres unique_violation code
+            return res.status(409).json({ error: '此自訂網址 ID 已被使用，請更換一個 (This Custom URL is already taken)' });
+        }
         res.status(500).json({ error: err.message });
     }
 });
@@ -90,12 +93,18 @@ app.post('/api/events', async (req, res) => {
 // Get Event
 app.get('/api/events/:id', async (req, res) => {
     const { id } = req.params;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
     try {
-        const { data, error } = await supabase
-            .from('events')
-            .select('*')
-            .eq('id', id)
-            .single();
+        let query = supabase.from('events').select('*');
+
+        if (isUuid) {
+            query = query.eq('id', id);
+        } else {
+            query = query.eq('slug', id);
+        }
+
+        const { data, error } = await query.single();
 
         if (error) throw error;
         res.json(data);
