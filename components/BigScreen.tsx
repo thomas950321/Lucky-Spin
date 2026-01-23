@@ -52,49 +52,68 @@ export const BigScreen: React.FC = () => {
     <div className="min-h-screen flex flex-col overflow-hidden relative" style={containerStyle}>
       {/* Event Title Overlay */}
       {eventConfig?.title && (
-        <div className="absolute top-6 left-6 z-30">
-          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-amber-500 drop-shadow-md font-serif tracking-wider">
+        <div className="absolute top-8 left-8 z-30">
+          <h1 className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-amber-500 drop-shadow-lg font-serif tracking-wider">
             {eventConfig.title}
           </h1>
         </div>
       )}
 
       {/* Winner History Sidebar */}
-      {gameState.winnersHistory && gameState.winnersHistory.length > 0 && (
-        <div className="absolute left-6 top-1/2 -translate-y-1/2 w-64 max-h-[70vh] glass-card p-4 overflow-hidden flex flex-col z-10 border-yellow-500/20 animate-in slide-in-from-left duration-500">
-          <h3 className="text-yellow-500 uppercase tracking-widest text-xs font-bold mb-4 flex items-center gap-2 pb-2 border-b border-white/5">
-            <Trophy size={14} />
-            Hall of Fame
+      {(gameState.winnersHistory?.length > 0 || gameState.pastRounds?.length > 0) && (
+        <div className="absolute left-6 top-1/2 -translate-y-1/2 w-80 max-h-[70vh] glass-card p-6 overflow-hidden flex flex-col z-10 border-yellow-500/20 animate-in slide-in-from-left duration-500">
+          <h3 className="text-yellow-400 uppercase tracking-widest text-xl font-bold mb-6 flex items-center gap-3 pb-4 border-b border-white/10">
+            <Trophy size={24} />
+            中獎名單
           </h3>
-          <div className="overflow-y-auto custom-scrollbar flex-1 space-y-2 pr-1">
-            {[...gameState.winnersHistory].reverse().map((winner, index) => (
-              <div key={index} className="bg-slate-900/60 p-3 rounded-lg flex items-center gap-3 border border-white/5 group hover:border-yellow-500/30 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-yellow-500/20 shadow-lg relative">
-                  {winner.avatar.startsWith('http') ? (
-                    <>
-                      <img
-                        src={winner.avatar}
-                        alt={winner.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          e.currentTarget.parentElement?.querySelector('.sidebar-fallback')?.classList.remove('hidden');
-                        }}
-                      />
-                      <div className="sidebar-fallback hidden w-full h-full flex items-center justify-center bg-violet-600 text-white font-bold text-xs">
-                        {winner.name.charAt(0).toUpperCase()}
-                      </div>
-                    </>
-                  ) : (
-                    <span className="text-lg">{winner.avatar}</span>
-                  )}
+          <div className="overflow-y-auto custom-scrollbar flex-1 space-y-6 pr-2">
+
+            {/* Past Rounds */}
+            {gameState.pastRounds?.map((round, rIndex) => (
+              <div key={round.id} className="space-y-3 mb-6 opacity-60 hover:opacity-100 transition-opacity">
+                <div className="text-sm text-white/40 uppercase tracking-widest font-bold border-b border-white/5 pb-1">
+                  Round {rIndex + 1}
                 </div>
-                <div>
-                  <div className="text-yellow-100 font-bold text-sm truncate max-w-[120px]">{winner.name}</div>
-                  <div className="text-yellow-500/50 text-[10px] uppercase tracking-wider">第 {gameState.winnersHistory.length - index} 位</div>
-                </div>
+                {[...round.winners].reverse().map((winner, index) => (
+                  <div key={`${round.id}-${index}`} className="bg-slate-900/40 p-3 rounded-lg flex items-center gap-4 border border-white/5">
+                    <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-white/10 relative shrink-0">
+                      {winner.avatar.startsWith('http') ? (
+                        <img src={winner.avatar} alt={winner.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-lg">{winner.avatar}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-slate-300 font-bold text-lg truncate">{winner.name}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
+
+            {/* Current Round */}
+            {gameState.winnersHistory?.length > 0 && (
+              <div className="space-y-3">
+                <div className="text-sm text-yellow-500/80 uppercase tracking-widest font-bold border-b border-yellow-500/20 pb-1">
+                  Round {(gameState.pastRounds?.length || 0) + 1}
+                </div>
+                {[...gameState.winnersHistory].reverse().map((winner, index) => (
+                  <div key={`rect-${index}`} className="bg-slate-900/80 p-4 rounded-xl flex items-center gap-4 border border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)]">
+                    <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-yellow-500/50 shadow-lg relative shrink-0">
+                      {winner.avatar.startsWith('http') ? (
+                        <img src={winner.avatar} alt={winner.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-xl">{winner.avatar}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-yellow-100 font-bold text-lg truncate">{winner.name}</div>
+                      <div className="text-yellow-500/60 text-xs uppercase tracking-wider font-bold">第 {gameState.winnersHistory.length - index} 位</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

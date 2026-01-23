@@ -157,7 +157,7 @@ export const AdminPanel: React.FC = () => {
                     <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-2">
                         <h3 className="text-purple-300 uppercase tracking-widest text-xs font-bold flex items-center gap-2">
                             <Trophy size={14} />
-                            名人堂
+                            中獎名單
                         </h3>
                         <div className="flex gap-1">
                             <button
@@ -180,7 +180,7 @@ export const AdminPanel: React.FC = () => {
                         {/* Past Rounds */}
                         {gameState.pastRounds?.map((round, rIndex) => (
                             <div key={round.id} className="space-y-2 mb-4 opacity-70 hover:opacity-100 transition-opacity">
-                                <div className="text-xs text-white/40 uppercase tracking-widest font-bold border-b border-white/5 pb-1 sticky top-0 bg-[#0f172a] z-10">
+                                <div className="text-xs text-white/40 uppercase tracking-widest font-bold border-b border-white/5 pb-1">
                                     Round #{rIndex + 1}
                                 </div>
                                 {[...round.winners].reverse().map((winner, index) => (
@@ -203,8 +203,8 @@ export const AdminPanel: React.FC = () => {
                         {/* Current Round */}
                         {gameState.winnersHistory?.length > 0 && (
                             <div className="space-y-2">
-                                <div className="text-xs text-purple-400 uppercase tracking-widest font-bold border-b border-purple-500/20 pb-1 sticky top-0 bg-[#0f172a] z-10">
-                                    Current Round
+                                <div className="text-xs text-purple-400 uppercase tracking-widest font-bold border-b border-purple-500/20 pb-1">
+                                    Round {(gameState.pastRounds?.length || 0) + 1}
                                 </div>
                                 {[...gameState.winnersHistory].reverse().map((winner, index) => (
                                     <div key={`current-${index}`} className="bg-slate-900/60 p-3 rounded-lg flex items-center gap-3 border border-white/5 group hover:border-purple-500/30 transition-colors">

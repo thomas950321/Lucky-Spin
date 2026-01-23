@@ -195,7 +195,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
 
                 {/* The Rotating Wheel */}
                 <div
-                    className="w-[85vw] h-[85vw] max-w-[600px] max-h-[600px] rounded-full border-[12px] border-[#bf953f] shadow-[inset_0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden transition-transform duration-[8000ms] cubic-bezier(0.12, 0, 0.05, 1)"
+                    className={`w-[85vw] h-[85vw] max-w-[600px] max-h-[600px] rounded-full border-[12px] border-[#bf953f] shadow-[inset_0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden ${isSpinning ? 'transition-transform duration-[8000ms] cubic-bezier(0.12, 0, 0.05, 1)' : ''}`}
                     style={{ transform: `rotate(${rotation}deg)` }}
                 >
                     {/* Metallic Segments */}
