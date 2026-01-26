@@ -383,9 +383,8 @@ io.on('connection', (socket) => {
                 io.to(eventId).emit('UPDATE_STATE', gameState);
             }, 8500);
         } else {
-            console.log('[Draw] No eligible winners left!');
-            // Optional: Notify frontend that no winners are available
-            io.to(eventId).emit('ERROR', { message: '沒有符合資格的中獎者 (No eligible winners left)' });
+            console.warn(`[Server] START_DRAW blocked: No eligible users in ${eventId}`);
+            io.to(eventId).emit('NOTIFY_ALL_WINNERS');
         }
     });
 
@@ -393,13 +392,33 @@ io.on('connection', (socket) => {
         console.log(`[Server] RESET requested by ${socket.id} for Event: ${eventId}`);
         if (!socket.data.isAdmin) {
             console.warn('[Server] RESET denied: Not Admin');
-            // return; 
+            return;
         }
         const gameState = getGameState(eventId);
+
+        // 1. Archive current winners into history before clearing, AND HIDE THEM from public Big Screen
+        if (gameState.winnersHistory && gameState.winnersHistory.length > 0) {
+            gameState.pastRounds.push({
+                id: Date.now(),
+                timestamp: new Date().toISOString(),
+                winners: [...gameState.winnersHistory],
+                hidden: true, // Hide this one from public Big Screen
+                roundNumber: (gameState.pastRounds?.filter(r => !r.hidden).length || 0) + 1
+            });
+        }
+
+        // 2. Also hide ALL previous rounds for the public Big Screen (Clean Slate)
+        if (gameState.pastRounds) {
+            gameState.pastRounds.forEach(r => r.hidden = true);
+        }
+
+        // 3. Reset volatile state for a clean slate
         gameState.status = 'WAITING';
         gameState.winner = null;
-        gameState.users = [];
-        gameState.winnersHistory = [];
+        gameState.users = []; // Clear users to force re-join
+        gameState.winnersHistory = []; // Clear current history
+
+        console.log(`[Server] Event: ${eventId} - Game RESET to Round 1`);
         io.to(eventId).emit('UPDATE_STATE', gameState);
     });
 
@@ -425,11 +444,14 @@ io.on('connection', (socket) => {
         const gameState = getGameState(eventId);
 
         // Archive current round
+        if (!gameState.pastRounds) gameState.pastRounds = []; // Safety check
         if (gameState.winnersHistory && gameState.winnersHistory.length > 0) {
             gameState.pastRounds.push({
                 id: Date.now(), // Simple ID based on timestamp
                 timestamp: new Date().toISOString(),
-                winners: [...gameState.winnersHistory]
+                winners: [...gameState.winnersHistory],
+                hidden: false, // New Round keeps history visible
+                roundNumber: (gameState.pastRounds?.filter(r => !r.hidden).length || 0) + 1
             });
         }
 

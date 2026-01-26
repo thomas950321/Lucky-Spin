@@ -9,19 +9,32 @@ export const AdminPanel: React.FC = () => {
     const navigate = useNavigate();
     const { gameState, emitStart, emitReset, joinEventRoom, emitJoin, socket, isAdmin, emitLogin, loginError, emitClearHistory, emitNewRound, emitRemoveBots } = useGameSocket();
     const [eventConfig, setEventConfig] = useState<{ title?: string, background_url?: string } | null>(null);
+    const [showAllWinnersAlert, setShowAllWinnersAlert] = useState(false);
 
     useEffect(() => {
         if (socket) {
             joinEventRoom(eventId || 'default');
-        }
 
+            const handleAllWinners = () => {
+                setShowAllWinnersAlert(true);
+                setTimeout(() => setShowAllWinnersAlert(false), 3000);
+            };
+
+            socket.on('NOTIFY_ALL_WINNERS', handleAllWinners);
+            return () => {
+                socket.off('NOTIFY_ALL_WINNERS', handleAllWinners);
+            };
+        }
+    }, [eventId, socket, joinEventRoom]);
+
+    useEffect(() => {
         if (eventId) {
             fetch(`/api/events/${eventId}`)
                 .then(res => res.json())
                 .then(data => setEventConfig(data))
                 .catch(console.error);
         }
-    }, [eventId, socket, joinEventRoom]);
+    }, [eventId]);
 
     if (!isAdmin) {
         return <AdminLogin onLogin={emitLogin} error={loginError} />;
@@ -61,7 +74,7 @@ export const AdminPanel: React.FC = () => {
     };
 
     const onNewRound = () => {
-        if (confirm("確定要開啟新一輪嗎？\n\n- 目前的參加者會被【保留】。\n- 目前的中獎紀錄會被【封存】。\n- 畫面會被【清空】。")) {
+        if (confirm("確定要開啟新一輪嗎？\n\n- 目前的參加者會被【保留】。\n- 目前的中獎名單會直接【存檔並顯示於下方】。\n- 大螢幕中央的獲獎畫面會【歸位】。")) {
             emitNewRound(eventId || 'default');
         }
     };
@@ -83,10 +96,10 @@ export const AdminPanel: React.FC = () => {
         csvContent += headers.join(",") + "\n";
 
         // Helper to add rows
-        const addRoundRows = (roundName: string, winners: any[]) => {
+        const addRoundRows = (roundNum: number, winners: any[]) => {
             [...winners].reverse().forEach((winner, index) => {
                 const row = [
-                    roundName,
+                    roundNum,
                     winners.length - index,
                     `"${winner.name.replace(/"/g, '""')}"`, // Escape quotes
                     `"${winner.lineUserId || winner.id}"`,
@@ -97,16 +110,16 @@ export const AdminPanel: React.FC = () => {
         };
 
         // 1. Past Rounds
-        if (gameState.pastRounds) {
-            gameState.pastRounds.forEach((round, index) => {
-                addRoundRows(`Round ${index + 1}`, round.winners);
+        if (gameState.pastRounds && gameState.pastRounds.length > 0) {
+            gameState.pastRounds.forEach((round) => {
+                addRoundRows(round.roundNumber || 1, round.winners);
             });
         }
 
-        // 2. Current Round
+        // 2. Current Live Round
         if (gameState.winnersHistory && gameState.winnersHistory.length > 0) {
             const currentRoundNum = (gameState.pastRounds?.length || 0) + 1;
-            addRoundRows(`Round ${currentRoundNum} (Current)`, gameState.winnersHistory);
+            addRoundRows(currentRoundNum, gameState.winnersHistory);
         }
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -126,86 +139,114 @@ export const AdminPanel: React.FC = () => {
 
             {/* Winner History Sidebar */}
             {(gameState.winnersHistory?.length > 0 || gameState.pastRounds?.length > 0) && (
-                <div className="absolute left-6 top-1/2 -translate-y-1/2 w-64 max-h-[70vh] glass-card p-4 overflow-hidden flex flex-col z-10 border-purple-500/20 animate-in slide-in-from-left duration-500">
-                    <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-2">
-                        <h3 className="text-purple-300 uppercase tracking-widest text-xs font-bold flex items-center gap-2">
-                            <Trophy size={14} />
+                <div className="absolute left-6 top-1/2 -translate-y-1/2 w-64 max-h-[70vh] glass-card p-4 overflow-hidden flex flex-col z-10 border-white/20 animate-in slide-in-from-left duration-500">
+                    <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-2">
+                        <h3 className="text-white uppercase tracking-widest text-xs font-black flex items-center gap-2">
+                            <Trophy size={14} className="text-yellow-400" />
                             中獎名單
                         </h3>
                         <div className="flex gap-1">
                             <button
                                 onClick={onClearHistory}
-                                className="text-purple-300 hover:text-red-400 transition-colors p-1 rounded hover:bg-white/10"
+                                className="text-white/60 hover:text-red-400 transition-colors p-1 rounded hover:bg-white/10"
                                 title="清除紀錄 (Clear History)"
                             >
-                                <Trash2 size={14} />
+                                < Trash2 size={14} />
                             </button>
                             <button
                                 onClick={exportToCSV}
-                                className="text-purple-300 hover:text-white transition-colors p-1 rounded hover:bg-white/10"
+                                className="text-white/60 hover:text-white transition-colors p-1 rounded hover:bg-white/10"
                                 title="匯出 Excel (CSV)"
                             >
                                 <Download size={14} />
                             </button>
                         </div>
                     </div>
-                    <div className="overflow-y-auto custom-scrollbar flex-1 space-y-2 pr-1">
-                        {/* Past Rounds */}
-                        {gameState.pastRounds?.map((round, rIndex) => (
-                            <div key={round.id} className="space-y-2 mb-4 opacity-70 hover:opacity-100 transition-opacity">
-                                <div className="text-xs text-white/40 uppercase tracking-widest font-bold border-b border-white/5 pb-1">
-                                    Round #{rIndex + 1}
+                    <div className="overflow-y-auto custom-scrollbar flex-1 space-y-6 pr-1">
+
+                        {/* 1. Current Active Round (TOP) */}
+                        <div className="space-y-3">
+                            <div className="text-[10px] text-yellow-400 uppercase tracking-[0.2em] font-black flex items-center gap-2">
+                                <div className="h-[1px] flex-1 bg-yellow-400/30"></div>
+                                ROUND #{(gameState.pastRounds?.filter(r => !r.hidden).length || 0) + 1}
+                                <div className="h-[1px] flex-1 bg-yellow-400/30"></div>
+                            </div>
+                            {gameState.winnersHistory?.length > 0 ? (
+                                <div className="space-y-1.5">
+                                    {[...gameState.winnersHistory].reverse().map((winner, index) => (
+                                        <div key={`current-${index}`} className="bg-yellow-500/20 p-2 rounded-lg flex items-center gap-3 border border-yellow-400/40 shadow-[0_0_10px_rgba(234,179,8,0.1)]">
+                                            <div className="w-6 h-6 rounded-full bg-yellow-900 flex items-center justify-center overflow-hidden border border-yellow-400/50 shrink-0">
+                                                {winner.avatar.startsWith('http') ? (
+                                                    <img src={winner.avatar} alt={winner.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="text-[10px]">{winner.avatar}</span>
+                                                )}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="text-yellow-200 font-black text-xs truncate">{winner.name}</div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                                {[...round.winners].reverse().map((winner, index) => (
-                                    <div key={`${round.id}-${index}`} className="bg-slate-900/40 p-2 rounded-lg flex items-center gap-3 border border-white/5">
-                                        <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-white/10 relative">
-                                            {winner.avatar.startsWith('http') ? (
-                                                <img src={winner.avatar} alt={winner.name} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <span className="text-xs">{winner.avatar}</span>
-                                            )}
+                            ) : (
+                                <div className="py-4 text-center border border-dashed border-white/20 rounded-lg bg-white/5">
+                                    <p className="text-white/30 text-[10px] uppercase tracking-widest font-bold">等待抽獎...</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 2. Past Rounds (Active Game) */}
+                        {[...(gameState.pastRounds || [])].filter(r => r.hidden !== true).reverse().map((round, visibleIndex) => (
+                            <div key={round.id} className="space-y-4">
+                                <div className="text-xs text-white uppercase tracking-[0.3em] font-black flex items-center gap-2">
+                                    <div className="h-[1px] flex-1 bg-white/40"></div>
+                                    ROUND #{round.roundNumber || (gameState.pastRounds!.filter(r => r.hidden !== true).length - visibleIndex)}
+                                    <div className="h-[1px] flex-1 bg-white/40"></div>
+                                </div>
+                                <div className="space-y-3">
+                                    {[...round.winners].reverse().map((winner, index) => (
+                                        <div key={`${round.id}-${index}`} className="bg-white/30 backdrop-blur-md p-3 rounded-xl flex items-center gap-4 border border-white/40 hover:bg-white/40 transition-colors">
+                                            <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-white/30 shrink-0">
+                                                {winner.avatar.startsWith('http') ? (
+                                                    <img src={winner.avatar} alt={winner.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <span className="text-[10px]">{winner.avatar}</span>
+                                                )}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="text-white font-bold text-xs truncate">{winner.name}</div>
+                                            </div>
                                         </div>
-                                        <div className="min-w-0">
-                                            <div className="text-slate-300 font-bold text-xs truncate max-w-[120px]">{winner.name}</div>
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         ))}
 
-                        {/* Current Round */}
-                        {gameState.winnersHistory?.length > 0 && (
-                            <div className="space-y-2">
-                                <div className="text-xs text-purple-400 uppercase tracking-widest font-bold border-b border-purple-500/20 pb-1">
-                                    Round {(gameState.pastRounds?.length || 0) + 1}
+                        {/* 3. Archived History (After Reset) */}
+                        {gameState.pastRounds?.some(r => r.hidden === true) && (
+                            <div className="pt-4 border-t border-white/10 space-y-6">
+                                <div className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-black text-center mt-2">
+                                    ─── 歷史存檔 (Archived) ───
                                 </div>
-                                {[...gameState.winnersHistory].reverse().map((winner, index) => (
-                                    <div key={`current-${index}`} className="bg-slate-900/60 p-3 rounded-lg flex items-center gap-3 border border-white/5 group hover:border-purple-500/30 transition-colors">
-                                        <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-purple-500/20 shadow-lg relative">
-                                            {winner.avatar.startsWith('http') ? (
-                                                <>
-                                                    <img
-                                                        src={winner.avatar}
-                                                        alt={winner.name}
-                                                        className="w-full h-full object-cover"
-                                                        onError={(e) => {
-                                                            e.currentTarget.style.display = 'none';
-                                                            e.currentTarget.parentElement?.querySelector('.sidebar-fallback')?.classList.remove('hidden');
-                                                        }}
-                                                    />
-                                                    <div className="sidebar-fallback hidden w-full h-full flex items-center justify-center bg-violet-600 text-white font-bold text-xs">
-                                                        {winner.name.charAt(0)}
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <span className="text-lg">{winner.avatar}</span>
-                                            )}
+                                {[...(gameState.pastRounds || [])].filter(r => r.hidden === true).reverse().map((round, archivedIndex) => (
+                                    <div key={`archived-${round.id}`} className="space-y-3 opacity-60 hover:opacity-100 transition-opacity">
+                                        <div className="text-[10px] text-white/60 font-bold flex items-center gap-2">
+                                            <div className="h-[1px] w-2 bg-white/20"></div>
+                                            PAST ROUND #{round.roundNumber || (gameState.pastRounds.filter(r => r.hidden).length - archivedIndex)} ({new Date(round.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
                                         </div>
-                                        <div>
-                                            <div className="text-purple-100 font-bold text-sm truncate max-w-[120px]">{winner.name}</div>
-                                            <div className="text-purple-500/50 text-[10px] uppercase tracking-wider">
-                                                第 {gameState.winnersHistory.length - index} 位
-                                            </div>
+                                        <div className="pl-4 space-y-2 border-l border-white/10">
+                                            {[...round.winners].reverse().map((winner, index) => (
+                                                <div key={`archived-winner-${index}`} className="bg-slate-900/40 p-1.5 rounded-lg flex items-center gap-2 border border-white/5">
+                                                    <div className="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden shrink-0">
+                                                        {winner.avatar.startsWith('http') ? (
+                                                            <img src={winner.avatar} alt={winner.name} className="w-full h-full object-cover opacity-50" />
+                                                        ) : (
+                                                            <span className="text-[8px] opacity-50">{winner.avatar}</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-white/60 font-bold text-[10px] truncate">{winner.name}</div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 ))}
@@ -219,10 +260,15 @@ export const AdminPanel: React.FC = () => {
             <div className="h-full w-full overflow-y-auto py-12 px-4 pb-24">
                 <div className="max-w-2xl w-full mx-auto space-y-8">
 
-                    <div className="flex justify-between items-center">
-                        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                            {eventConfig?.title ? `${eventConfig.title} (Admin)` : '管理後台'}
-                        </h1>
+                    <div className="flex justify-between items-end">
+                        <div className="space-y-1">
+                            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                                {eventConfig?.title ? `${eventConfig.title} (Admin)` : '管理後台'}
+                            </h1>
+                            <div className="text-yellow-400/80 text-[10px] font-black tracking-[0.2em] uppercase">
+                                ROUND #{(gameState.pastRounds?.filter(r => !r.hidden).length || 0) + 1}
+                            </div>
+                        </div>
                         <div className="flex gap-2">
                             {!eventId && (
                                 <button
@@ -233,9 +279,6 @@ export const AdminPanel: React.FC = () => {
                                     建立新活動
                                 </button>
                             )}
-
-
-
                         </div>
                     </div>
 
@@ -259,7 +302,25 @@ export const AdminPanel: React.FC = () => {
                     {/* Controls */}
                     <div className="grid md:grid-cols-3 gap-6">
                         <button
-                            onClick={() => emitStart(eventId || 'default')}
+                            onClick={() => {
+                                // 1. Collect all past winners
+                                const pastWinnerIds = new Set();
+                                gameState.winnersHistory?.forEach(w => pastWinnerIds.add(w.lineUserId));
+                                gameState.pastRounds?.forEach(round => {
+                                    round.winners?.forEach(w => pastWinnerIds.add(w.lineUserId));
+                                });
+
+                                // 2. Filter eligible
+                                const eligibleCount = gameState.users.filter(u => !pastWinnerIds.has(u.lineUserId)).length;
+
+                                if (gameState.users.length === 0) {
+                                    alert("目前沒有參加者加入！");
+                                } else if (eligibleCount === 0) {
+                                    alert("所有人均以中獎");
+                                } else {
+                                    emitStart(eventId || 'default');
+                                }
+                            }}
                             disabled={gameState.users.length === 0 || gameState.status === 'ROLLING'}
                             className="group relative glass-card p-8 transition-all duration-300 hover:border-green-400/50 hover:bg-green-500/5 hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:border-white/10"
                         >
@@ -284,7 +345,11 @@ export const AdminPanel: React.FC = () => {
                         </button>
 
                         <button
-                            onClick={() => emitReset(eventId || 'default')}
+                            onClick={() => {
+                                if (confirm("確定要【全面重製】嗎？\n\n- 所有目前名單會被清空且【隱藏】。\n- 參加者名單會被清空，所有人需重新加入。\n- 回合數會重新從 ROUND #1 開始。")) {
+                                    emitReset(eventId || 'default');
+                                }
+                            }}
                             className="group relative glass-card p-8 transition-all duration-300 hover:border-red-400/50 hover:bg-red-500/5 hover:-translate-y-1"
                         >
                             <div className="flex flex-col items-center gap-4">
@@ -321,29 +386,22 @@ export const AdminPanel: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Last Winner Info */}
-                    {gameState.winner && (
-                        <div className="glass-card p-6 border-yellow-500/30 flex items-center gap-6 animate-in slide-in-from-bottom-4 shadow-[0_0_20px_rgba(234,179,8,0.15)]">
-                            <div className="bg-gradient-to-br from-yellow-400 to-orange-500 p-4 rounded-xl shadow-lg shadow-orange-500/20">
-                                <Trophy className="text-white" size={28} />
-                            </div>
-                            <div>
-                                <div className="text-xs text-yellow-200 uppercase tracking-wider font-bold mb-1">前屆冠軍</div>
-                                <div className="text-2xl font-bold text-white flex items-center gap-3">
-                                    <span className="text-4xl filter drop-shadow-md flex items-center justify-center">
-                                        {gameState.winner.avatar.startsWith('http') ? (
-                                            <img src={gameState.winner.avatar} alt="Winner" className="w-12 h-12 rounded-full object-cover border-2 border-yellow-200/50" />
-                                        ) : (
-                                            gameState.winner.avatar
-                                        )}
-                                    </span>
-                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-amber-100">{gameState.winner.name}</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
+            {/* All Winners Alert Overlay */}
+            {showAllWinnersAlert && (
+                <div className="absolute inset-0 flex items-center justify-center z-[100] bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="glass-card p-12 border-yellow-500/50 shadow-[0_0_50px_rgba(234,179,8,0.3)] animate-in zoom-in-95 duration-300 flex flex-col items-center gap-6">
+                        <div className="w-24 h-24 rounded-full bg-yellow-500 flex items-center justify-center shadow-[0_0_30px_rgba(234,179,8,0.5)]">
+                            <Trophy size={48} className="text-white" />
+                        </div>
+                        <h2 className="text-5xl font-black text-white tracking-widest drop-shadow-lg text-center">
+                            所有人均以中獎
+                        </h2>
+                        <div className="h-1 w-32 bg-gradient-to-r from-transparent via-yellow-400 to-transparent"></div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

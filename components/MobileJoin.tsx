@@ -24,6 +24,18 @@ export const MobileJoin: React.FC = () => {
     }
   }, [eventId]);
 
+  // Sync join state with server (RESET handling)
+  const { gameState } = useGameSocket();
+  useEffect(() => {
+    if (hasJoined && currentUser) {
+      const stillInList = gameState.users.some(u => u.lineUserId === currentUser.lineUserId);
+      if (!stillInList) {
+        console.log("[MobileJoin] User not in list - resetting join state");
+        setHasJoined(false);
+      }
+    }
+  }, [gameState.users, hasJoined, currentUser]);
+
   const checkAuth = async () => {
     try {
       const res = await fetch('/api/user/me');

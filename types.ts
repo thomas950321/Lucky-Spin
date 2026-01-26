@@ -16,6 +16,8 @@ export interface GameState {
     id: number;
     timestamp: string;
     winners: User[];
+    hidden?: boolean;
+    roundNumber?: number;
   }>;
 }
 
