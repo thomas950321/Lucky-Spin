@@ -89,16 +89,17 @@ export const AdminPanel: React.FC = () => {
             return;
         }
 
-        const headers = ["回合 (Round)", "順序 (Rank)", "名稱 (Name)", "LINE ID / ID", "頭像網址 (Avatar URL)"];
+        const headers = ["狀態 (Status)", "回合 (Round)", "順序 (Rank)", "名稱 (Name)", "LINE ID / ID", "頭像網址 (Avatar URL)"];
 
         // Add BOM for Excel UTF-8 compatibility
         let csvContent = "\uFEFF";
         csvContent += headers.join(",") + "\n";
 
         // Helper to add rows
-        const addRoundRows = (roundNum: number, winners: any[]) => {
+        const addRoundRows = (status: string, roundNum: any, winners: any[]) => {
             [...winners].reverse().forEach((winner, index) => {
                 const row = [
+                    status,
                     roundNum,
                     winners.length - index,
                     `"${winner.name.replace(/"/g, '""')}"`, // Escape quotes
@@ -111,15 +112,32 @@ export const AdminPanel: React.FC = () => {
 
         // 1. Past Rounds
         if (gameState.pastRounds && gameState.pastRounds.length > 0) {
-            gameState.pastRounds.forEach((round) => {
-                addRoundRows(round.roundNumber || 1, round.winners);
+            const archivedRoundsCount = gameState.pastRounds.filter(r => r.hidden).length;
+            gameState.pastRounds.forEach((round, idx) => {
+                const isHidden = round.hidden === true;
+                const status = isHidden ? "已存檔 (Archived)" : "進行中 (Active)";
+
+                // For roundNum: use stored roundNumber, or fallback to chronological sequence among its type
+                let displayRoundNum = round.roundNumber;
+                if (!displayRoundNum) {
+                    if (isHidden) {
+                        // Finding its index among hidden rounds
+                        const currentHiddenIdx = gameState.pastRounds.filter((r, i) => r.hidden && i <= idx).length;
+                        displayRoundNum = `Archive ${currentHiddenIdx}`;
+                    } else {
+                        const currentActiveIdx = gameState.pastRounds.filter((r, i) => !r.hidden && i <= idx).length;
+                        displayRoundNum = currentActiveIdx;
+                    }
+                }
+
+                addRoundRows(status, displayRoundNum, round.winners);
             });
         }
 
         // 2. Current Live Round
         if (gameState.winnersHistory && gameState.winnersHistory.length > 0) {
-            const currentRoundNum = (gameState.pastRounds?.length || 0) + 1;
-            addRoundRows(currentRoundNum, gameState.winnersHistory);
+            const currentRoundNum = (gameState.pastRounds?.filter(r => !r.hidden).length || 0) + 1;
+            addRoundRows("進行中 (Active)", currentRoundNum, gameState.winnersHistory);
         }
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
