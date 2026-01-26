@@ -106,6 +106,7 @@ export const useGameSocket = () => {
         emitLogin,
         emitClearHistory: (eventId?: string) => socket?.emit('CLEAR_HISTORY', eventId),
         emitNewRound: (eventId?: string) => socket?.emit('NEW_ROUND', eventId),
+        emitRemoveBots: (eventId?: string) => socket?.emit('REMOVE_BOTS', eventId),
         socket
     };
 };

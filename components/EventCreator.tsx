@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Image as ImageIcon, Link as LinkIcon, Copy, ArrowLeft, Settings, Check, Trash2, ExternalLink } from 'lucide-react';
+import { Calendar, Image as ImageIcon, Link as LinkIcon, Copy, ArrowLeft, Settings, Check, Trash2, ExternalLink, Smartphone } from 'lucide-react';
 import { useGameSocket } from '../services/socket';
 import { AdminLogin } from './AdminLogin';
 
@@ -323,6 +323,13 @@ export const EventCreator: React.FC = () => {
                                             <ExternalLink size={12} />
                                             開啟
                                         </button>
+                                        <button
+                                            onClick={() => window.open(`/#/event/${event.slug || event.id}/join`, '_blank')}
+                                            className="flex-1 bg-green-500/10 hover:bg-green-500/20 text-green-300 text-xs py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                                        >
+                                            <Smartphone size={12} />
+                                            加入
+                                        </button>
                                     </div>
                                 </div>
                             ))
@@ -343,6 +350,7 @@ export const EventCreator: React.FC = () => {
                                     <div className="text-xs text-slate-500 font-mono mt-0.5 flex gap-2">
                                         <span>{event.slug || 'UUID'}</span>
                                         <a href={`/#/admin/event/${event.slug || event.id}`} className="text-purple-400 hover:underline">管理</a>
+                                        <a href={`/#/event/${event.slug || event.id}/join`} target="_blank" className="text-green-400 hover:underline">加入</a>
                                     </div>
                                 </div>
                                 <button

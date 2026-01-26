@@ -138,7 +138,7 @@ export const BigScreen: React.FC = () => {
             <div className="flex justify-between items-center mb-8 sticky top-0 bg-slate-900/95 z-10 py-2 border-b border-white/5">
               <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-200 to-amber-500 flex items-center gap-3">
                 <Users className="text-yellow-500" />
-                Participants ({gameState.users.length})
+                活動成員 ({gameState.users.length})
               </h2>
               <button
                 onClick={() => setShowParticipants(false)}

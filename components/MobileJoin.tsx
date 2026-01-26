@@ -102,8 +102,8 @@ export const MobileJoin: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center" style={containerStyle}>
       <div className="w-full max-w-sm mb-8">
-        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-violet-400 mb-2 glow-text">
-          {eventConfig?.title || 'RaffleRoyale'}
+        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-amber-500 mb-2 glow-text">
+          {eventConfig?.title || '歡迎加入'}
         </h1>
         <p className="text-slate-400">大螢幕互動抽獎系統</p>
       </div>
@@ -123,9 +123,8 @@ export const MobileJoin: React.FC = () => {
               className="w-full bg-[#06C755] hover:bg-[#05b34c] text-white font-bold py-4 rounded-xl text-xl shadow-lg transition-all flex items-center justify-center gap-3"
             >
               {/* Simple LINE Icon SVG */}
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8">
-                <path d="M20.6 10c0-4.4-4.7-8-10.6-8S-.6 5.6-.6 10c0 4 3.9 7.4 9.1 7.9.4 0 .9.1 1 .2.5.3.3.8.1 1.3 0 0-.2.8-.2.9-.2.8-.8 2-.8 2 0 0 1 .4 2.8 1.5 1.7 1.1 9.2-5.4 9.2-5.4 3.7-2 6-4.6 6-8zM7.2 12.1H5.7v-2.1h1.5v2.1zm2.8 0H8.5V7.8h1.5v4.3zm2.7 0h-2l1.3-1.8-1.3-2.5h1.7l.6 1.4.5-1.4h1.6l-1.6 2.6 1.7 1.7h-1.8l-.7-1.4zM24 12c0 6.6-5.4 12-12 12S0 18.6 0 12 5.4 0 12 0s12 5.4 12 12z" opacity="0" />
-                <path d="M19.4 10c0-3.8-4.2-7-9.4-7S.6 6.2.6 10c0 3.5 3.1 6.4 7.9 6.9.3 0 .7.1.9.2.2.1.2.3.1.6 0 .1-.2.4-.2.5l-.2.8s-.1.4.2.8c.8.5 4.3 2.5 5.8 1.7.1 0 3.6-2.1 3.6-2.1 3.2-1.7 5.2-4 5.2-6.9H19.4zM6.9 12.3H4.7c-.2 0-.4-.2-.4-.4V8.1c0-.2.2-.4.4-.4h2.2c.2 0 .4.2.4.4.1.2-.1.4-.3.4H5.5v1.1h1.4c.2 0 .4.2.4.4 0 .2-.2.4-.4.4zm2.8 0H8c-.2 0-.4-.2-.4-.4V8.1c0-.2.2-.4.4-.4h1.7c.2 0 .4.2.4.4v3.8c0 .2-.2.4-.4.4zm3.6-2.4l1.1 2.3c.1.1.2.1.2.1h1.6c.2 0 .3-.2.2-.4L14.7 9.8l1.6-1.9c.1-.2 0-.4-.2-.4h-1.7c-.1 0-.2 0-.2.1L13.2 9l-1.1-1.3c-.1-.1-.2-.1-.2-.1h-1.6c-.2 0-.3.2-.2.4l1.6 2.2-1.7 2.1c-.1.2 0 .4.2.4h1.7c.1 0 .2-.1.2-.1l1.2-2.3zM16.4 12.3h-2.2c-.2 0-.4-.2-.4-.4V8.1c0-.2.2-.4.4-.4h2.2c.2 0 .4.2.4.4v.4c0 .2-.2.4-.4.4h-1.4v.9h1.4c.2 0 .4.2.4.4v.4c0 .2-.2.4-.4.4h-1.4v1h1.4c.2 0 .4.2.4.4 0 .1-.1.3-.4.3z" fill="#FFF" />
+              <svg viewBox="0 0 170 170" fill="currentColor" className="w-8 h-8">
+                <path d="M147 78c 0-28-28-50-62-50.5-34 0-62 22.5-62 50.5 0 25 22 45.5 52 50 2 .5 5 1.5 5.5 3 .5 1.5.5 4 0 5.5 0 0-.5 4.5 -1 5.5 -.5 1.5 -1 6 5.5 3.5 6.5 -3 35.5-21 48.7-36 9-10 13-20 13.3-31z" />
               </svg>
               LINE 登入
             </button>

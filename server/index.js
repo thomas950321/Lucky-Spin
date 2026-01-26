@@ -441,6 +441,22 @@ io.on('connection', (socket) => {
         io.to(eventId).emit('UPDATE_STATE', gameState);
     });
 
+    socket.on('REMOVE_BOTS', (eventId = 'default') => {
+        console.log(`[Server] REMOVE_BOTS requested by ${socket.id} for Event: ${eventId}`);
+        if (!socket.data.isAdmin) {
+            console.warn('[Server] REMOVE_BOTS denied: Not Admin');
+            return;
+        }
+        const gameState = getGameState(eventId);
+        // Filter out users whose lineUserId starts with 'mock_'
+        const initialCount = gameState.users.length;
+        gameState.users = gameState.users.filter(u => !u.lineUserId.startsWith('mock_'));
+        const removedCount = initialCount - gameState.users.length;
+
+        console.log(`[Server] Removed ${removedCount} bots.`);
+        io.to(eventId).emit('UPDATE_STATE', gameState);
+    });
+
     socket.on('disconnect', () => {
         // Cleanup? Not strictly necessary for simple persistent array
     });
