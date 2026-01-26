@@ -346,10 +346,30 @@ io.on('connection', (socket) => {
         const gameState = getGameState(eventId);
         if (gameState.status === 'ROLLING') return; // Prevent double start
 
-        if (gameState.users.length > 0) {
+        // Collect all past winners (from current session history and past rounds)
+        const pastWinnerIds = new Set();
+
+        // 1. Current round history
+        if (gameState.winnersHistory) {
+            gameState.winnersHistory.forEach(w => pastWinnerIds.add(w.lineUserId));
+        }
+
+        // 2. Past rounds history
+        if (gameState.pastRounds) {
+            gameState.pastRounds.forEach(round => {
+                if (round.winners) {
+                    round.winners.forEach(w => pastWinnerIds.add(w.lineUserId));
+                }
+            });
+        }
+
+        // Filter eligible users
+        const eligibleUsers = gameState.users.filter(u => !pastWinnerIds.has(u.lineUserId));
+
+        if (eligibleUsers.length > 0) {
             // Pick winner immediately so wheel knows where to land
-            const winnerIndex = Math.floor(Math.random() * gameState.users.length);
-            gameState.winner = gameState.users[winnerIndex];
+            const winnerIndex = Math.floor(Math.random() * eligibleUsers.length);
+            gameState.winner = eligibleUsers[winnerIndex];
             gameState.status = 'ROLLING'; // Start Animation
             io.to(eventId).emit('UPDATE_STATE', gameState);
 
@@ -362,6 +382,10 @@ io.on('connection', (socket) => {
                 gameState.status = 'WINNER'; // Show Result
                 io.to(eventId).emit('UPDATE_STATE', gameState);
             }, 8500);
+        } else {
+            console.log('[Draw] No eligible winners left!');
+            // Optional: Notify frontend that no winners are available
+            io.to(eventId).emit('ERROR', { message: '沒有符合資格的中獎者 (No eligible winners left)' });
         }
     });
 

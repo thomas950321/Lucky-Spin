@@ -251,13 +251,15 @@ export const AdminPanel: React.FC = () => {
                             {eventConfig?.title ? `${eventConfig.title} (Admin)` : '管理後台'}
                         </h1>
                         <div className="flex gap-2">
-                            <button
-                                onClick={() => navigate('/admin/events')}
-                                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white font-bold flex items-center gap-2 transition-colors shadow-lg shadow-purple-500/20"
-                            >
-                                <PlusCircle size={18} />
-                                建立新活動
-                            </button>
+                            {!eventId && (
+                                <button
+                                    onClick={() => navigate('/admin/events')}
+                                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white font-bold flex items-center gap-2 transition-colors shadow-lg shadow-purple-500/20"
+                                >
+                                    <PlusCircle size={18} />
+                                    建立新活動
+                                </button>
+                            )}
                             {eventId && (
                                 <button
                                     onClick={() => navigate('/admin')}

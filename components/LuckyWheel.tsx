@@ -188,7 +188,8 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
                             top: '50%',
                             left: '50%',
                             transform: `rotate(${i * (360 / 24)}deg) translate(0, -320px)`, // Radius adjustment
-                            animation: `sparkle 2s infinite ${i * 0.1}s`
+                            animation: `running-light 3s linear infinite`,
+                            animationDelay: `${(i * 0.125) - 3.0}s`
                         }}
                     ></div>
                 ))}
