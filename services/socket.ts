@@ -23,7 +23,7 @@ export const useGameSocket = () => {
         newSocket.on('connect', () => {
             console.log('Connected to socket server');
             // Auto-login if password saved
-            const savedPwd = sessionStorage.getItem('admin_password');
+            const savedPwd = localStorage.getItem('admin_password');
             if (savedPwd) {
                 newSocket.emit('ADMIN_LOGIN', savedPwd);
             }
@@ -40,7 +40,7 @@ export const useGameSocket = () => {
 
         newSocket.on('ADMIN_LOGIN_FAIL', () => {
             setLoginError(true);
-            sessionStorage.removeItem('admin_password'); // Clear invalid
+            localStorage.removeItem('admin_password'); // Clear invalid
         });
 
         setSocket(newSocket);
@@ -92,7 +92,7 @@ export const useGameSocket = () => {
         // Actually, saving in SUCCESS handler is safer.
         // But the SUCCESS handler inside useEffect needs access to 'password' variable which isn't there.
         // So we save to sessionStorage HERE.
-        sessionStorage.setItem('admin_password', password);
+        localStorage.setItem('admin_password', password);
     };
 
     return {

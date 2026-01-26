@@ -260,15 +260,7 @@ export const AdminPanel: React.FC = () => {
                                     建立新活動
                                 </button>
                             )}
-                            {eventId && (
-                                <button
-                                    onClick={() => navigate('/admin')}
-                                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300 flex items-center gap-2 transition-colors"
-                                >
-                                    <ArrowLeft size={18} />
-                                    返回預設房
-                                </button>
-                            )}
+
 
                             {/* Delete Button (Only for specific events) */}
                             {eventId && (
