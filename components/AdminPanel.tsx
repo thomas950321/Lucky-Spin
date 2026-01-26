@@ -173,10 +173,11 @@ export const AdminPanel: React.FC = () => {
                             </button>
                             <button
                                 onClick={exportToCSV}
-                                className="text-white/60 hover:text-white transition-colors p-1 rounded hover:bg-white/10"
+                                className="text-white/60 hover:text-white transition-colors p-1 rounded hover:bg-white/10 flex items-center gap-1"
                                 title="匯出 Excel (CSV)"
                             >
                                 <Download size={14} />
+                                <span className="text-[10px] whitespace-nowrap">下載中獎名單</span>
                             </button>
                         </div>
                     </div>
@@ -358,13 +359,13 @@ export const AdminPanel: React.FC = () => {
                                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 group-hover:shadow-blue-500/40 transition-all duration-300">
                                     <Archive className="text-white" size={36} />
                                 </div>
-                                <span className="text-3xl font-bold text-white group-hover:text-blue-400 transition-colors">開啟新一輪</span>
+                                <span className="text-3xl font-bold text-white group-hover:text-blue-400 transition-colors">開啟新一輪抽獎</span>
                             </div>
                         </button>
 
                         <button
                             onClick={() => {
-                                if (confirm("確定要【全面重製】嗎？\n\n- 所有目前名單會被清空且【隱藏】。\n- 參加者名單會被清空，所有人需重新加入。\n- 回合數會重新從 ROUND #1 開始。")) {
+                                if (confirm("確定要【重置遊戲】嗎？\n\n提醒：\n-重置後，所有參加者將歸零，需重新加入。\n-重置後，中獎名單會被清空，請確認已下載中獎名單。\n若還未下載，請按【取消】回後臺下載中獎名單")) {
                                     emitReset(eventId || 'default');
                                 }
                             }}
