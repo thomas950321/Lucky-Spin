@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useGameSocket } from '../services/socket';
 import { UserPlus, CheckCircle, User as UserIcon } from 'lucide-react';
@@ -34,23 +34,32 @@ export const MobileJoin: React.FC = () => {
 
   // Sync join state with server (RESET handling)
   const { gameState } = useGameSocket();
+  const wasInListRef = useRef(false);
+
   useEffect(() => {
     if (currentUser) {
       const existingUser = gameState.users.find(u => u.lineUserId === currentUser.lineUserId);
       const inList = !!existingUser;
-      setIsAlreadyInList(inList);
 
-      // If already in list, ensure the name shown is the one they joined with
+      // If we WERE in the list and now we are NOT, it's a server RESET
+      // Reset the join state so the user can join again
+      // If we WERE in the list and now we are NOT, check if it's a RESET
+      // We assume it's a reset if the user list is empty or significantly changed
+      // For stability, let's only auto-reset if the game status implies waiting or users are cleared
+      if (wasInListRef.current && !inList && gameState.users.length === 0) {
+        console.log("[MobileJoin] User removed & list empty (RESET) - resetting join state");
+        setHasJoined(false);
+      }
+
+      setIsAlreadyInList(inList);
+      wasInListRef.current = inList;
+
+      // If currently in list, ensure the name shown is the latest one
       if (existingUser && existingUser.name) {
         setCustomName(existingUser.name);
       }
-
-      if (hasJoined && !inList) {
-        console.log("[MobileJoin] User not in list - resetting join state");
-        setHasJoined(false);
-      }
     }
-  }, [gameState.users, hasJoined, currentUser]);
+  }, [gameState.users, currentUser]);
 
   const checkAuth = async () => {
     try {
@@ -183,14 +192,14 @@ export const MobileJoin: React.FC = () => {
               <img src={currentUser?.avatar} className="w-24 h-24 rounded-full border-4 border-white/10 shadow-xl" />
               <div className="w-full">
                 <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">
-                  {isAlreadyInList ? '顯示名稱' : '顯示名稱 (可修改)'}
+                  {isAlreadyInList || hasJoined ? '顯示名稱' : '顯示名稱 (可修改)'}
                 </label>
                 <input
                   type="text"
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value)}
-                  readOnly={isAlreadyInList}
-                  className={`w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-center text-xl font-bold text-white focus:outline-none focus:border-pink-500/50 focus:bg-white/10 transition-all ${isAlreadyInList ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  readOnly={isAlreadyInList || hasJoined}
+                  className={`w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-center text-xl font-bold text-white focus:outline-none focus:border-pink-500/50 focus:bg-white/10 transition-all ${isAlreadyInList || hasJoined ? 'opacity-70 cursor-not-allowed' : ''}`}
                   placeholder="輸入您的名稱"
                 />
               </div>
