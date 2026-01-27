@@ -68,13 +68,13 @@ export const AdminPanel: React.FC = () => {
     };
 
     const onClearHistory = () => {
-        if (confirm("確定要清除中獎紀錄嗎？這不會清除目前的參加者以及與目前的狀態。")) {
+        if (confirm("確定要清除所有中獎紀錄嗎？一旦刪除則無法恢復。")) {
             emitClearHistory(eventId || 'default');
         }
     };
 
     const onNewRound = () => {
-        if (confirm("確定要開啟新一輪嗎？\n\n- 目前的參加者會被【保留】。\n- 目前的中獎名單會直接【存檔並顯示於下方】。\n- 大螢幕中央的獲獎畫面會【歸位】。")) {
+        if (confirm("確定要開啟新一輪抽其他獎項嗎？\n\n提醒：\n- 目前所有參加者都會保留\n- 目前中獎名單會保留並顯示於大螢幕")) {
             emitNewRound(eventId || 'default');
         }
     };
@@ -89,14 +89,23 @@ export const AdminPanel: React.FC = () => {
             return;
         }
 
-        const headers = ["狀態 (Status)", "回合 (Round)", "順序 (Rank)", "名稱 (Name)", "LINE ID / ID", "頭像網址 (Avatar URL)"];
+        const headers = ["狀態 (Status)", "回合 (Round)", "中獎順序 (Rank)", "名稱 (Name)", "LINE ID / ID", "頭像網址 (Avatar URL)", "中獎時間 (Time)"];
 
         // Add BOM for Excel UTF-8 compatibility
         let csvContent = "\uFEFF";
         csvContent += headers.join(",") + "\n";
 
         // Helper to add rows
-        const addRoundRows = (status: string, roundNum: any, winners: any[]) => {
+        const addRoundRows = (status: string, roundNum: any, winners: any[], timestampVal: string | number) => {
+            const dateObj = new Date(timestampVal);
+            // Format: YYYY-MM-DD HH:mm:ss
+            const dateStr = dateObj.getFullYear() + "-" +
+                String(dateObj.getMonth() + 1).padStart(2, '0') + "-" +
+                String(dateObj.getDate()).padStart(2, '0') + " " +
+                String(dateObj.getHours()).padStart(2, '0') + ":" +
+                String(dateObj.getMinutes()).padStart(2, '0') + ":" +
+                String(dateObj.getSeconds()).padStart(2, '0');
+
             [...winners].reverse().forEach((winner, index) => {
                 const row = [
                     status,
@@ -104,7 +113,8 @@ export const AdminPanel: React.FC = () => {
                     winners.length - index,
                     `"${winner.name.replace(/"/g, '""')}"`, // Escape quotes
                     `"${winner.lineUserId || winner.id}"`,
-                    `"${winner.avatar}"`
+                    `"${winner.avatar}"`,
+                    `"${dateStr}"`
                 ];
                 csvContent += row.join(",") + "\n";
             });
@@ -130,14 +140,14 @@ export const AdminPanel: React.FC = () => {
                     }
                 }
 
-                addRoundRows(status, displayRoundNum, round.winners);
+                addRoundRows(status, displayRoundNum, round.winners, round.timestamp || Date.now());
             });
         }
 
         // 2. Current Live Round
         if (gameState.winnersHistory && gameState.winnersHistory.length > 0) {
             const currentRoundNum = (gameState.pastRounds?.filter(r => !r.hidden).length || 0) + 1;
-            addRoundRows("進行中 (Active)", currentRoundNum, gameState.winnersHistory);
+            addRoundRows("進行中 (Active)", currentRoundNum, gameState.winnersHistory, Date.now());
         }
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
