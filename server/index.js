@@ -171,7 +171,8 @@ app.get('/api/auth/line/login', (req, res) => {
         client_id: clientId,
         redirect_uri: redirectUri,
         state: state,
-        scope: 'profile openid'
+        scope: 'profile openid',
+        bot_prompt: 'aggressive'
     });
 
     const lineAuthUrl = `https://access.line.me/oauth2/v2.1/authorize?${params.toString()}`;

@@ -114,7 +114,7 @@ export const MobileJoin: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center" style={containerStyle}>
       <div className="w-full max-w-sm mb-8">
-        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-amber-500 mb-2 glow-text">
+        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-amber-500 mb-2 glow-text-gold">
           {eventConfig?.title || '歡迎加入'}
         </h1>
         <p className="text-slate-400">大螢幕互動抽獎系統</p>
