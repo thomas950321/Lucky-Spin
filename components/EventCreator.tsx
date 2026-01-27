@@ -177,7 +177,7 @@ export const EventCreator: React.FC = () => {
                                     placeholder="https://..."
                                     className="w-full bg-slate-900/50 border border-white/10 rounded-xl p-3 pl-10 text-white placeholder:text-slate-600 focus:border-purple-500/50 outline-none transition-all"
                                 />
-                                <ImageLinkIcon className="absolute left-3 top-3.5 text-slate-500" size={18} />
+                                <ImageIcon className="absolute left-3 top-3.5 text-slate-500" size={18} />
                             </div>
                             <p className="text-xs text-slate-500">選填。若留空將使用預設賭場風格背景。</p>
                         </div>
@@ -368,6 +368,3 @@ export const EventCreator: React.FC = () => {
     );
 };
 
-const ImageLinkIcon = ({ className, size }: any) => (
-    <ImageIcon className={className} size={size} />
-);

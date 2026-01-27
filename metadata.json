@@ -1,5 +1,0 @@
-{
-  "name": "RaffleRoyale",
-  "description": "A real-time lottery and raffle application where users can join via mobile, and an admin controls the draw on a big screen. Features AI-powered assistance.",
-  "requestFramePermissions": []
-}

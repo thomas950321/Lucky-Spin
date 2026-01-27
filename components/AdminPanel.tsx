@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGameSocket } from '../services/socket';
-import { Play, RotateCcw, Users, Trophy, PlusCircle, ArrowLeft, Download, Trash2, Archive } from 'lucide-react';
+import { Play, RotateCcw, Users, Trophy, PlusCircle, Download, Trash2, Archive } from 'lucide-react';
 import { AdminLogin } from './AdminLogin';
 
 export const AdminPanel: React.FC = () => {
@@ -311,7 +311,7 @@ export const AdminPanel: React.FC = () => {
                                 <Users className="text-cyan-400" size={48} />
                             </div>
                             <div className="text-center">
-                                <h2 className="text-violet-200 text-sm font-bold tracking-[0.2em] uppercase mb-2">目前活躍人數</h2>
+                                <h2 className="text-violet-200 text-sm font-bold tracking-[0.2em] uppercase mb-2">目前參與人數</h2>
                                 <p className="text-7xl font-black text-white tracking-tight glow-text">{gameState.users.length}</p>
                                 <span className="text-white/30 text-xs uppercase tracking-widest mt-2 block">人</span>
                             </div>
@@ -335,7 +335,7 @@ export const AdminPanel: React.FC = () => {
                                 if (gameState.users.length === 0) {
                                     alert("目前沒有參加者加入！");
                                 } else if (eligibleCount === 0) {
-                                    alert("所有人均以中獎");
+                                    alert("所有人均已中獎");
                                 } else {
                                     emitStart(eventId || 'default');
                                 }
@@ -415,7 +415,7 @@ export const AdminPanel: React.FC = () => {
                             <Trophy size={48} className="text-white" />
                         </div>
                         <h2 className="text-5xl font-black text-white tracking-widest drop-shadow-lg text-center">
-                            所有人均以中獎
+                            所有人均已中獎
                         </h2>
                         <div className="h-1 w-32 bg-gradient-to-r from-transparent via-yellow-400 to-transparent"></div>
                     </div>

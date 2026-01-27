@@ -13,59 +13,45 @@
 *   **💾 雲端資料庫 (Supabase)**: 完整記錄參與者名單與歷史中獎紀錄，重整頁面不丟失資料。
 *   **🔄 多輪次抽獎 (Multi-Round)**: 支援「開啟新一輪」，保留參加者但重置中獎名單，並自動封存歷史紀錄。
 *   **🎯 精準控制**: 後台管理員可隨時重置各項狀態，並精準控制抽獎流程。
+*   **🤖 測試支持**: 後台內建機器人測試功能，方便開發與展示。
 
 ---
 
 ## 🔗 三大核心介面 (Pages)
 
 ### 1. 🖥️ 大螢幕顯示 (Big Screen)
-*   **連結**: `http://localhost:3000/`
+*   **連結**: `http://localhost:3000/` (開發環境)
 *   **用途**: 現場投影用 (Main Display)。
 *   **功能**:
     *   動態展示所有參與者。
-    *   3D 視覺轉盤抽獎動畫。
+    *   精美轉盤抽獎動畫。
     *   中獎者慶祝特效與歷史榜單 (Winner Sidebar)。
 
 ### 2. 📱 參與者加入 (Mobile Join)
 *   **連結**: `http://localhost:3000/#/join`
 *   **用途**: 參與者掃碼進入。
 *   **功能**:
-    *   支援 LINE 登入 (LINE Login) 或訪客模式。
-    *   登入成功後即時顯示連線狀態。
+    *   支援 LINE 登入 (LINE Login)。
+    *   顯示個人抽獎狀態與即時同步。
 
 ### 3. ⚙️ 後臺管理 (Admin Panel)
 *   **連結**: `http://localhost:3000/#/admin`
 *   **用途**: 活動控台 (Control Center)。
 *   **功能**:
-    *   **Start Draw (開始抽獎)**: 啟動轉盤。
-    *   **Start New Round (開啟新一輪)**: 
-        *   **保留**目前所有參加者 (不用重新掃碼)。
-        *   **封存**目前的中獎紀錄 (封存至 "Past Rounds")。
-        *   **清空**畫面，準備進行下一輪抽獎。
-    *   **Reset Game (重置遊戲)**: **危險操作**，將清空所有參與者與歷史紀錄，一切歸零。
-    *   **History & Export (歷史與匯出)**:
-        *   左側側邊欄顯示所有回合 (Round 1, Round 2...) 的中獎名單。
-        *   點擊 **下載圖示** 可匯出包含所有歷史紀錄的 CSV 檔案。
-        *   點擊 **垃圾桶圖示** 可徹底清除所有歷史紀錄 (但保留參加者)。
+    *   **Start Draw (開始抽獎)**: 啟動轉盤，自動過濾已中獎者。
+    *   **Start New Round (開啟新一輪)**: 封存目前中獎紀錄並開啟新回合，保留參加者。
+    *   **Reset Game (重置遊戲)**: 清空所有參加者與歷史紀錄。
+    *   **Export (匯出)**: 支援匯出中獎名單為 CSV 檔案。
 
 ### 4. 📅 活動管理 (Event Manager)
 *   **連結**: `http://localhost:3000/#/admin/events`
-*   **用途**: 創建多場獨立活動 (Create Multiple Sessions)。
-*   **功能**:
-    *   自訂活動標題與背景圖。
-    *   產生獨立活動連結 (e.g. `/#/event/123` 與 `/#/event/123/join`)。
-    *   各場活動數據完全獨立隔離。
+*   **用途**: 創建與管理多場獨立活動。
 
 ---
 
 ## 🏗️ 資料庫設定 (Database Setup)
 
-本系統新增了多場次活動支援，請務必在 Supabase 執行 SQL 更新：
-
-1.  登入 [Supabase Dashboard](https://supabase.com/dashboard).
-2.  進入 SQL Editor。
-3.  複製並執行專案根目錄下的 `schema.sql` 檔案內容。
-    *   這將建立 `events` 資料表並設定正確的訪問權限 (RLS)。
+請在 Supabase 執行 `schema.sql` 檔案內容來初始化資料表，包含 `events` 與 `participants`。
 
 ---
 
@@ -77,46 +63,33 @@ npm install
 ```
 
 ### 2. 設定環境變數 (.env)
-請在專案根目錄建立 `.env` 檔案，並填入以下資訊：
-
+建立 `.env` 檔案並參考以下設定：
 ```properties
-# Server Port
+ADMIN_PASSWORD=your_password
 PORT=4000
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=http://your-local-ip:3000
 
-# Security
-ADMIN_PASSWORD=admin123
+# Supabase
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_anon_key
 
-# LINE Login (Required for Auth)
-LINE_CHANNEL_ID=你的ChannelID
-LINE_CHANNEL_SECRET=你的ChannelSecret
-LINE_CALLBACK_URL=http://localhost:4000/api/auth/line/callback
-
-# Supabase (Database)
-SUPABASE_URL=你的SupabaseURL
-SUPABASE_KEY=你的SupabaseAnonKey
+# LINE Login
+LINE_CHANNEL_ID=your_id
+LINE_CHANNEL_SECRET=your_secret
+LINE_CALLBACK_URL=http://your-local-ip:4000/api/auth/line/callback
 ```
 
-### 3. 啟動開發伺服器 (Dev)
-同時啟動前端 (Vite) 與後端 (Express)：
+### 3. 開發模式 (Dev)
 ```bash
 npm run dev
 ```
-*   前端: `http://localhost:3000`
-*   後端: `http://localhost:4000`
 
 ---
 
 ## 🛠️ 技術棧 (Tech Stack)
 
-*   **Frontend**: React 18, Vite, TailwindCSS (Styling), Framer Motion (Animations)
-*   **Backend**: Node.js, Express
-*   **Communication**: Socket.io (WebSocket)
-*   **Database**: Supabase (PostgreSQL)
-*   **Auth**: LINE Login API (OAuth 2.0)
-*   **Language**: TypeScript
-
-## 📝 部署注意事項 (Deployment)
-1.  **Callback URL**: 部署到雲端 (如 Render/Vercel) 後，記得去 [LINE Developers Console](https://developers.line.biz/) 更新 Callback URL 為您的正式網域。
-    *   範例: `https://your-app.onrender.com/api/auth/line/callback`
-2.  **Environment**: 確保雲端平台設定了所有必要的環境變數。
+*   **Frontend**: React, Vite, TailwindCSS, Framer Motion, Lucide React
+*   **Backend**: Node.js, Express, Socket.io
+*   **Database**: Supabase
+*   **Auth**: LINE Login API
+*   **Language**: TypeScript / JavaScript

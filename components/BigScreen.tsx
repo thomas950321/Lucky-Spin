@@ -258,7 +258,7 @@ export const BigScreen: React.FC = () => {
               <Trophy size={48} className="text-white" />
             </div>
             <h2 className="text-5xl font-black text-white tracking-widest drop-shadow-lg text-center">
-              所有人均以中獎
+              所有人均已中獎
             </h2>
             <div className="h-1 w-32 bg-gradient-to-r from-transparent via-yellow-400 to-transparent"></div>
           </div>

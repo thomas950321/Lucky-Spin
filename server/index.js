@@ -480,9 +480,6 @@ io.on('connection', (socket) => {
         io.to(eventId).emit('UPDATE_STATE', gameState);
     });
 
-    socket.on('disconnect', () => {
-        // Cleanup? Not strictly necessary for simple persistent array
-    });
 });
 
 httpServer.listen(PORT, () => {

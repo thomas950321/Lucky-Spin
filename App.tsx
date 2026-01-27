@@ -4,10 +4,7 @@ import { BigScreen } from './components/BigScreen';
 import { MobileJoin } from './components/MobileJoin';
 import { AdminPanel } from './components/AdminPanel';
 import { EventCreator } from './components/EventCreator';
-import { Monitor, Smartphone, Settings } from 'lucide-react';
 import './index.css';
-
-
 
 const App: React.FC = () => {
   return (

@@ -74,6 +74,11 @@ export const MobileJoin: React.FC = () => {
 
   const handleJoin = () => {
     if (socket && currentUser) {
+      if (isAlreadyInList) {
+        setHasJoined(true);
+        return;
+      }
+
       if (!customName.trim()) {
         alert("請輸入名稱");
         return;
@@ -83,7 +88,7 @@ export const MobileJoin: React.FC = () => {
         name: customName.trim(),
         avatar: currentUser.avatar,
         lineUserId: currentUser.lineUserId,
-        id: currentUser.lineUserId // Use lineUserId as ID or let server/socket generate? socket.ts handles it
+        id: currentUser.lineUserId
       } as any, undefined, eventId || 'default');
 
       setHasJoined(true);
@@ -113,14 +118,29 @@ export const MobileJoin: React.FC = () => {
           <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
             <CheckCircle className="text-green-500" size={40} />
           </div>
-          <h2 className="text-3xl font-bold text-white mb-2 glow-text">加入成功！</h2>
-          <p className="text-slate-300 mb-6">請在大螢幕上尋找您的頭像。</p>
+          <h2 className="text-3xl font-bold text-white mb-2 glow-text">
+            {isAlreadyInList ? '您已在名單中' : '加入成功！'}
+          </h2>
+          <p className="text-slate-300 mb-6">
+            {isAlreadyInList ? '您的資料已同步至大螢幕。' : '請在大螢幕上尋找您的頭像。'}
+          </p>
           <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
             <img src={currentUser?.avatar} alt="Avatar" className="w-20 h-20 rounded-full mx-auto mb-4 border-2 border-white/20" />
             <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-300 to-pink-300">{customName}</div>
           </div>
-          <div className="mt-8 text-sm text-slate-400">
-            抽獎結束前請勿關閉此頁面
+          <div className="mt-8 flex flex-col gap-4">
+            <div className="text-sm text-slate-400">
+              抽獎結束前請勿關閉此頁面
+            </div>
+            <button
+              onClick={async () => {
+                await fetch('/api/auth/logout');
+                window.location.reload();
+              }}
+              className="text-slate-500 text-xs hover:text-slate-300 transition-colors"
+            >
+              登出 (切換帳號)
+            </button>
           </div>
         </div>
       </div>
@@ -178,8 +198,8 @@ export const MobileJoin: React.FC = () => {
 
             <button
               onClick={handleJoin}
-              disabled={!customName.trim() || isAlreadyInList}
-              className={`w-full btn-primary text-white font-bold py-4 rounded-xl text-xl shadow-lg flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed ${isAlreadyInList ? 'from-slate-600 to-slate-700 bg-none' : ''}`}
+              disabled={!customName.trim()}
+              className={`w-full btn-primary text-white font-bold py-4 rounded-xl text-xl shadow-lg flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed ${isAlreadyInList ? 'from-indigo-600 to-indigo-700 bg-none' : ''}`}
             >
               {isAlreadyInList ? (
                 <>
