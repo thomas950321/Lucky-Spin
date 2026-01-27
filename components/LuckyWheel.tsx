@@ -9,15 +9,14 @@ interface LuckyWheelProps {
     onSpin: () => void;
 }
 
-const COLORS = [
-    '#ec4899', // Pink-500
-    '#8b5cf6', // Violet-500
-    '#ef4444', // Red-500
-    '#f59e0b', // Amber-500
-    '#10b981', // Emerald-500
-    '#3b82f6', // Blue-500
-    '#6366f1', // Indigo-500
-    '#d946ef', // Fuchsia-500
+// Casino High-End Colors
+const SEGMENT_COLORS = [
+    '#9b1c31', // Ruby Red
+    '#0f52ba', // Sapphire Blue
+    '#004d25', // Emerald Green 
+    '#4a0404', // Deep Garnet
+    '#1a1a7a', // Deep Indigo
+    '#004d25', // Forest Green
 ];
 
 export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplete, onSpin }) => {
@@ -71,16 +70,6 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
             winAudio.current.currentTime = 0;
         };
     }, []);
-
-    // Casino High-End Colors
-    const SEGMENT_COLORS = [
-        '#9b1c31', // Ruby Red
-        '#0f52ba', // Sapphire Blue
-        '#004d25', // Emerald Green 
-        '#4a0404', // Deep Garnet
-        '#1a1a7a', // Deep Indigo
-        '#004d25', // Forest Green
-    ];
 
     const spinningRef = useRef(false);
     const lastWinnerIdRef = useRef<string | null>(null);
@@ -155,9 +144,24 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
         }, 8000); // 8s spin for suspense
     };
 
-    if (users.length === 0) return null;
+    const segmentAngle = 360 / Math.max(users.length, 1);
 
-    const segmentAngle = 360 / users.length;
+    const wheelBackground = React.useMemo(() => {
+        return `conic-gradient(from 0deg, ${users.map((_, i) => {
+            const color = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
+            return `${color} ${i * segmentAngle}deg ${(i + 1) * segmentAngle}deg`;
+        }).join(', ')})`;
+    }, [users.length, segmentAngle]);
+
+    const dividers = React.useMemo(() => {
+        return users.map((_, i) => (
+            <div
+                key={`div-${i}`}
+                className="absolute top-0 left-1/2 w-1 h-1/2 bg-gradient-to-b from-[#fcf6ba] via-[#bf953f] to-transparent origin-bottom -ml-0.5"
+                style={{ transform: `rotate(${i * segmentAngle}deg)` }}
+            />
+        ));
+    }, [users.length, segmentAngle]);
 
     return (
         <div className="relative flex flex-col items-center justify-center w-full h-full min-h-[700px]">
@@ -203,10 +207,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
                     <div
                         className="absolute inset-0 -z-10 w-full h-full"
                         style={{
-                            background: `conic-gradient(from 0deg, ${users.map((_, i) => {
-                                const color = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
-                                return `${color} ${i * segmentAngle}deg ${(i + 1) * segmentAngle}deg`;
-                            }).join(', ')})`
+                            background: wheelBackground
                         }}
                     >
                         {/* Overlay Gradient for metallic sheen */}
@@ -214,13 +215,7 @@ export const LuckyWheel: React.FC<LuckyWheelProps> = ({ gameState, onSpinComplet
                     </div>
 
                     {/* Gold Dividers */}
-                    {users.map((_, i) => (
-                        <div
-                            key={`div-${i}`}
-                            className="absolute top-0 left-1/2 w-1 h-1/2 bg-gradient-to-b from-[#fcf6ba] via-[#bf953f] to-transparent origin-bottom -ml-0.5"
-                            style={{ transform: `rotate(${i * segmentAngle}deg)` }}
-                        />
-                    ))}
+                    {dividers}
 
                     {/* Content (Avatars & Names) */}
                     {users.map((user, idx) => {

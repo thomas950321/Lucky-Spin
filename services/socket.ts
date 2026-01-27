@@ -50,11 +50,10 @@ export const useGameSocket = () => {
         };
     }, []);
 
-    const emitJoin = (userOrName: string | User, avatar?: string, eventId?: string) => {
+    const emitJoin = useCallback((userOrName: string | User, avatar?: string, eventId?: string) => {
         if (!socket) return;
 
         let user: User;
-        // Handle legacy signature (name, avatar) vs new signature (userObj, null, eventId)
         if (typeof userOrName === 'string') {
             user = {
                 id: Math.random().toString(36).substr(2, 9),
@@ -66,34 +65,37 @@ export const useGameSocket = () => {
         }
 
         socket.emit('JOIN', { user, eventId });
-    };
+    }, [socket]);
 
-    // For BigScreen/Admin to just listen to a specific event
-    const joinEventRoom = (eventId: string) => {
+    const joinEventRoom = useCallback((eventId: string) => {
         socket?.emit('REQUEST_STATE', eventId);
-    };
+    }, [socket]);
 
-    const emitReset = (eventId?: string) => {
+    const emitReset = useCallback((eventId?: string) => {
         socket?.emit('RESET', eventId);
-    };
+    }, [socket]);
 
-    const emitStart = (eventId?: string) => {
+    const emitStart = useCallback((eventId?: string) => {
         socket?.emit('START_DRAW', eventId);
-    };
+    }, [socket]);
 
-    const emitLogin = (password: string) => {
+    const emitLogin = useCallback((password: string) => {
         if (!socket) return;
         socket.emit('ADMIN_LOGIN', password);
-        // Optimistically save, or wait for success?
-        // Better wait for success, but for simplicity saving here or in SUCCESS handler
-        // The SUCCESS handler handles the "IsAdmin=true" state.
-        // We need to save it somewhere to restore it.
-        // Let's explicitly save it here so the connect handler can pick it up if we refresh immediately?
-        // Actually, saving in SUCCESS handler is safer.
-        // But the SUCCESS handler inside useEffect needs access to 'password' variable which isn't there.
-        // So we save to sessionStorage HERE.
         localStorage.setItem('admin_password', password);
-    };
+    }, [socket]);
+
+    const emitClearHistory = useCallback((eventId?: string) => {
+        socket?.emit('CLEAR_HISTORY', eventId);
+    }, [socket]);
+
+    const emitNewRound = useCallback((eventId?: string) => {
+        socket?.emit('NEW_ROUND', eventId);
+    }, [socket]);
+
+    const emitRemoveBots = useCallback((eventId?: string) => {
+        socket?.emit('REMOVE_BOTS', eventId);
+    }, [socket]);
 
     return {
         gameState,
@@ -104,9 +106,9 @@ export const useGameSocket = () => {
         isAdmin,
         loginError,
         emitLogin,
-        emitClearHistory: (eventId?: string) => socket?.emit('CLEAR_HISTORY', eventId),
-        emitNewRound: (eventId?: string) => socket?.emit('NEW_ROUND', eventId),
-        emitRemoveBots: (eventId?: string) => socket?.emit('REMOVE_BOTS', eventId),
+        emitClearHistory,
+        emitNewRound,
+        emitRemoveBots,
         socket
     };
 };
