@@ -12,6 +12,7 @@ export const MobileJoin: React.FC = () => {
   const [customName, setCustomName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [hasJoined, setHasJoined] = useState(false);
+  const [isAlreadyInList, setIsAlreadyInList] = useState(false);
   const [eventConfig, setEventConfig] = useState<{ title?: string, background_url?: string } | null>(null);
 
   useEffect(() => {
@@ -27,9 +28,11 @@ export const MobileJoin: React.FC = () => {
   // Sync join state with server (RESET handling)
   const { gameState } = useGameSocket();
   useEffect(() => {
-    if (hasJoined && currentUser) {
-      const stillInList = gameState.users.some(u => u.lineUserId === currentUser.lineUserId);
-      if (!stillInList) {
+    if (currentUser) {
+      const inList = gameState.users.some(u => u.lineUserId === currentUser.lineUserId);
+      setIsAlreadyInList(inList);
+
+      if (hasJoined && !inList) {
         console.log("[MobileJoin] User not in list - resetting join state");
         setHasJoined(false);
       }
@@ -147,13 +150,14 @@ export const MobileJoin: React.FC = () => {
               <img src={currentUser?.avatar} className="w-24 h-24 rounded-full border-4 border-white/10 shadow-xl" />
               <div className="w-full">
                 <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">
-                  顯示名稱 (可修改)
+                  {isAlreadyInList ? '顯示名稱' : '顯示名稱 (可修改)'}
                 </label>
                 <input
                   type="text"
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-center text-xl font-bold text-white focus:outline-none focus:border-pink-500/50 focus:bg-white/10 transition-all"
+                  readOnly={isAlreadyInList}
+                  className={`w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-center text-xl font-bold text-white focus:outline-none focus:border-pink-500/50 focus:bg-white/10 transition-all ${isAlreadyInList ? 'opacity-70 cursor-not-allowed' : ''}`}
                   placeholder="輸入您的名稱"
                 />
               </div>
@@ -161,11 +165,20 @@ export const MobileJoin: React.FC = () => {
 
             <button
               onClick={handleJoin}
-              disabled={!customName.trim()}
-              className="w-full btn-primary text-white font-bold py-4 rounded-xl text-xl shadow-lg flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!customName.trim() || isAlreadyInList}
+              className={`w-full btn-primary text-white font-bold py-4 rounded-xl text-xl shadow-lg flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed ${isAlreadyInList ? 'from-slate-600 to-slate-700 bg-none' : ''}`}
             >
-              <UserPlus size={24} className="group-hover:scale-110 transition-transform" />
-              確認加入
+              {isAlreadyInList ? (
+                <>
+                  <CheckCircle size={24} />
+                  您已在名單中
+                </>
+              ) : (
+                <>
+                  <UserPlus size={24} className="group-hover:scale-110 transition-transform" />
+                  確認加入
+                </>
+              )}
             </button>
 
             <button
