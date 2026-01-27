@@ -6,7 +6,7 @@ import confetti from 'canvas-confetti';
 
 export const MobileJoin: React.FC = () => {
   const { id: eventId } = useParams();
-  const { emitJoin, socket } = useGameSocket();
+  const { emitJoin, socket, joinEventRoom } = useGameSocket();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [customName, setCustomName] = useState('');
@@ -25,12 +25,25 @@ export const MobileJoin: React.FC = () => {
     }
   }, [eventId]);
 
+  // Sync event state on mount
+  useEffect(() => {
+    if (eventId && socket) {
+      joinEventRoom(eventId);
+    }
+  }, [eventId, socket, joinEventRoom]);
+
   // Sync join state with server (RESET handling)
   const { gameState } = useGameSocket();
   useEffect(() => {
     if (currentUser) {
-      const inList = gameState.users.some(u => u.lineUserId === currentUser.lineUserId);
+      const existingUser = gameState.users.find(u => u.lineUserId === currentUser.lineUserId);
+      const inList = !!existingUser;
       setIsAlreadyInList(inList);
+
+      // If already in list, ensure the name shown is the one they joined with
+      if (existingUser && existingUser.name) {
+        setCustomName(existingUser.name);
+      }
 
       if (hasJoined && !inList) {
         console.log("[MobileJoin] User not in list - resetting join state");
